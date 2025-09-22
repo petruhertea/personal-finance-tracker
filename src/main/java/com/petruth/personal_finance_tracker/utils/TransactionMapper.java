@@ -1,6 +1,7 @@
 package com.petruth.personal_finance_tracker.utils;
 
 import com.petruth.personal_finance_tracker.dto.TransactionDTO;
+import com.petruth.personal_finance_tracker.entity.Category;
 import com.petruth.personal_finance_tracker.entity.Transaction;
 import com.petruth.personal_finance_tracker.entity.User;
 import org.springframework.stereotype.Component;
@@ -14,22 +15,23 @@ public class TransactionMapper {
                 transaction.getId(),
                 transaction.getAmount(),
                 transaction.getType().toString(),
-                transaction.getCategory(),
                 transaction.getDescription(),
                 transaction.getDate(),
-                transaction.getUser().getId()
+                transaction.getUser().getId(),
+                transaction.getCategory().getId(),
+                transaction.getCategory().getName()
         );
     }
     // For cleaner userID inserts, this method spares us from inserting the userID like: "user":{"id":id}
-    public Transaction toTransaction(TransactionDTO transactionDTO, User user) {
+    public Transaction toTransaction(TransactionDTO transactionDTO, User user, Category category) {
         return new Transaction(
                 transactionDTO.getId(),
                 transactionDTO.getAmount(),
                 Transaction.TransactionType.valueOf(transactionDTO.getType()),
-                transactionDTO.getCategory(),
                 transactionDTO.getDescription(),
                 transactionDTO.getDate(),
-                user
+                user,
+                category
         );
     }
 }

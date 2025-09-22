@@ -13,20 +13,14 @@ public class User {
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "username")
+    @Column(name = "username", unique = true)
     private String username;
 
-    @Column(name = "email")
+    @Column(name = "email", unique = true)
     private String email;
 
     @Column(name = "password")
-    private String password; // BCrypt-hash, poate fi null pentru OAuth2
-
-    @Column(name = "provider")
-    private String provider; // local, google, github etc.
-
-    @Column(name = "provider_id")
-    private String providerId;
+    private String password;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Transaction> transactions = new ArrayList<>();
@@ -35,14 +29,11 @@ public class User {
 
     }
 
-    public User(Long id, String username, String email, String password, String provider,
-                String providerId, List<Transaction> transactions) {
+    public User(Long id, String username, String email, String password, List<Transaction> transactions) {
         this.id = id;
         this.username = username;
         this.email = email;
         this.password = password;
-        this.provider = provider;
-        this.providerId = providerId;
         this.transactions = transactions;
     }
 
@@ -78,22 +69,6 @@ public class User {
         this.password = password;
     }
 
-    public String getProvider() {
-        return provider;
-    }
-
-    public void setProvider(String provider) {
-        this.provider = provider;
-    }
-
-    public String getProviderId() {
-        return providerId;
-    }
-
-    public void setProviderId(String providerId) {
-        this.providerId = providerId;
-    }
-
     public List<Transaction> getTransactions() {
         return transactions;
     }
@@ -105,12 +80,11 @@ public class User {
     @Override
     public String toString() {
         return "User{" +
-                "providerId='" + providerId + '\'' +
-                ", provider='" + provider + '\'' +
-                ", password='" + password + '\'' +
-                ", email='" + email + '\'' +
+                "id=" + id +
                 ", username='" + username + '\'' +
-                ", id=" + id +
+                ", email='" + email + '\'' +
+                ", password='" + password + '\'' +
+                ", transactions=" + transactions +
                 '}';
     }
 }

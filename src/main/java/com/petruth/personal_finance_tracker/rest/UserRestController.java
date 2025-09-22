@@ -11,17 +11,11 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/users")
 public class UserRestController {
-    private final UserService userService;
+
     private final TransactionService transactionService;
 
-    public UserRestController(UserService userService, TransactionService transactionService) {
-        this.userService = userService;
+    public UserRestController(TransactionService transactionService) {
         this.transactionService = transactionService;
-    }
-
-    @PostMapping
-    public User createUser(@RequestBody User user){
-        return userService.save(user);
     }
 
     @GetMapping("/{id}/transactions")

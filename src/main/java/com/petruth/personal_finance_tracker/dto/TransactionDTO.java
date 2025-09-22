@@ -3,34 +3,36 @@ package com.petruth.personal_finance_tracker.dto;
 import java.time.LocalDateTime;
 
 public class TransactionDTO {
-    private Integer id;
+    private Long id;
     private Double amount;
     private String type;
-    private String category;
     private String description;
     private LocalDateTime date;
     private Long userId;
+    private Long categoryId; // pentru requesturi
+    private String categoryName; // doar pentru răspunsuri
 
     public TransactionDTO() {
 
     }
 
-    public TransactionDTO(Integer id, Double amount, String type, String category, String description,
-                          LocalDateTime date, Long userId) {
+    public TransactionDTO(Long id, Double amount, String type, String description,
+                          LocalDateTime date, Long userId, Long categoryId, String categoryName) {
         this.id = id;
         this.amount = amount;
         this.type = type;
-        this.category = category;
         this.description = description;
         this.date = date;
         this.userId = userId;
+        this.categoryId = categoryId;
+        this.categoryName = categoryName;
     }
 
-    public Integer getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -48,14 +50,6 @@ public class TransactionDTO {
 
     public void setType(String type) {
         this.type = type;
-    }
-
-    public String getCategory() {
-        return category;
-    }
-
-    public void setCategory(String category) {
-        this.category = category;
     }
 
     public String getDescription() {
@@ -80,5 +74,21 @@ public class TransactionDTO {
 
     public void setUserId(Long userId) {
         this.userId = userId;
+    }
+
+    public Long getCategoryId() {
+        return categoryId;
+    }
+
+    public void setCategoryId(Long categoryId) {
+        this.categoryId = categoryId;
+    }
+
+    public String getCategoryName() {
+        return categoryName;
+    }
+
+    public void setCategoryName(String categoryName) {
+        this.categoryName = categoryName;
     }
 }

@@ -12,8 +12,8 @@ import java.time.LocalDateTime;
 @RequestMapping("/api/transactions")
 public class TransactionRestController {
 
-    private TransactionService transactionService;
-    private TransactionMapper transactionMapper;
+    private final TransactionService transactionService;
+    private final TransactionMapper transactionMapper;
 
     public TransactionRestController(TransactionService transactionService,
                                      TransactionMapper transactionMapper){
@@ -40,7 +40,7 @@ public class TransactionRestController {
     }
 
     @DeleteMapping("/{id}")
-    public String deleteTransaction(@PathVariable Integer id){
+    public String deleteTransaction(@PathVariable Long id){
         Transaction tempTransaction = transactionService.findById(id);
 
         if (tempTransaction == null){

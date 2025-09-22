@@ -8,7 +8,7 @@ import java.util.List;
 public interface TransactionService {
     List<TransactionDTO> findByUserId(int id);
     Transaction save(Transaction transaction);
-    void deleteById(Integer id);
-    Transaction findById(Integer id);
+    void deleteById(Long id);
+    Transaction findById(Long id);
     Transaction saveFromDTO(TransactionDTO transactionDTO);
 }

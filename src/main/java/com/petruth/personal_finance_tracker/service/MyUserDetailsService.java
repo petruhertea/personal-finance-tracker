@@ -8,11 +8,11 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 @Service
-public class CustomUserDetailsService implements UserDetailsService {
+public class MyUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
 
-    CustomUserDetailsService(UserRepository userRepository){
+    MyUserDetailsService(UserRepository userRepository){
         this.userRepository = userRepository;
     }
 
@@ -21,10 +21,9 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-        // transformăm în UserDetails
         return org.springframework.security.core.userdetails.User.builder()
                 .username(user.getUsername())
-                .password(user.getPassword()) // asigură-te că e criptată cu BCrypt
+                .password(user.getPassword())
                 .build();
     }
 }

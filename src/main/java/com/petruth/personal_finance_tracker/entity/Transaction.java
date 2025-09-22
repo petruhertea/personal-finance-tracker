@@ -1,11 +1,9 @@
 package com.petruth.personal_finance_tracker.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 
 @Entity
 @Table(name = "transactions")
@@ -17,16 +15,13 @@ public class Transaction {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    private Integer id;
+    private Long id;
 
     @Column(name = "amount")
     private Double amount;
 
     @Enumerated(EnumType.STRING)
     private TransactionType type;
-
-    @Column(name = "category")
-    private String category;
 
     @Column(name = "description")
     private String description;
@@ -39,26 +34,30 @@ public class Transaction {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @ManyToOne
+    @JoinColumn(name = "category_id", nullable = false)
+    private Category category;
+
     public Transaction(){
 
     }
 
-    public Transaction(Integer id, Double amount, TransactionType type,
-                       String category, String description, LocalDateTime date, User user) {
+    public Transaction(Long id, Double amount, TransactionType type, String description,
+                       LocalDateTime date, User user, Category category) {
         this.id = id;
         this.amount = amount;
         this.type = type;
-        this.category = category;
         this.description = description;
         this.date = date;
         this.user = user;
+        this.category = category;
     }
 
-    public Integer getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -76,14 +75,6 @@ public class Transaction {
 
     public void setType(TransactionType type) {
         this.type = type;
-    }
-
-    public String getCategory() {
-        return category;
-    }
-
-    public void setCategory(String category) {
-        this.category = category;
     }
 
     public String getDescription() {
@@ -110,15 +101,24 @@ public class Transaction {
         this.user = user;
     }
 
+    public Category getCategory() {
+        return category;
+    }
+
+    public void setCategory(Category category) {
+        this.category = category;
+    }
+
     @Override
     public String toString() {
         return "Transaction{" +
-                "date=" + date +
-                ", description='" + description + '\'' +
-                ", category='" + category + '\'' +
-                ", type=" + type +
+                "id=" + id +
                 ", amount=" + amount +
-                ", id=" + id +
+                ", type=" + type +
+                ", description='" + description + '\'' +
+                ", date=" + date +
+                ", user=" + user +
+                ", category=" + category +
                 '}';
     }
 }

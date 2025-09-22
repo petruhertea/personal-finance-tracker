@@ -1,56 +1,58 @@
 package com.petruth.personal_finance_tracker.service;
 
 import com.petruth.personal_finance_tracker.dto.TransactionDTO;
+import com.petruth.personal_finance_tracker.entity.Category;
 import com.petruth.personal_finance_tracker.entity.Transaction;
 import com.petruth.personal_finance_tracker.entity.User;
 import com.petruth.personal_finance_tracker.repository.TransactionRepository;
 import com.petruth.personal_finance_tracker.utils.TransactionMapper;
+import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class TransactionServiceImpl implements TransactionService{
 
-    private TransactionRepository transactionRepository;
-    private TransactionMapper transactionMapper;
-    private UserService userService;
+    private final TransactionRepository transactionRepository;
+    private final TransactionMapper transactionMapper;
+    private final UserService userService;
+    private final CategoryService categoryService;
 
     TransactionServiceImpl(TransactionRepository transactionRepository,
                            TransactionMapper transactionMapper,
-                           UserService userService){
+                           UserService userService,
+                           CategoryService categoryService
+                           ){
         this.transactionRepository = transactionRepository;
         this.transactionMapper = transactionMapper;
         this.userService = userService;
+        this.categoryService = categoryService;
     }
 
     @Override
-    public Transaction findById(Integer id) {
+    public Transaction findById(Long id) {
         return transactionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Transaction with id -> "+ id + " not found"));
     }
 
     @Override
     public List<TransactionDTO> findByUserId(int id) {
-        List<Transaction> tempTransactions = transactionRepository.findByUserId(id);
+        List<Transaction> tempTransactions = transactionRepository.findByUserIdOrderByDateDesc(id);
 
-        List<TransactionDTO> transactionList = new ArrayList<>();
-
-        for (Transaction transaction : tempTransactions){
-            TransactionDTO result = transactionMapper.toTransactionDTO(transaction);
-
-            transactionList.add(result);
-        }
-
-        return transactionList;
+        return tempTransactions
+                .stream()
+                .map(transactionMapper::toTransactionDTO)
+                .collect(Collectors.toList());
     }
 
     // We use TransactionDTO for cleaner requests and responses
     @Override
     public Transaction saveFromDTO(TransactionDTO transactionDTO) {
         User dbUser = userService.findById(transactionDTO.getUserId());
-        Transaction transaction = transactionMapper.toTransaction(transactionDTO, dbUser);
+        Category dbCategory = categoryService.findById(transactionDTO.getCategoryId());
+        Transaction transaction = transactionMapper.toTransaction(transactionDTO, dbUser, dbCategory);
         return transactionRepository.save(transaction);
     }
 
@@ -61,7 +63,7 @@ public class TransactionServiceImpl implements TransactionService{
     }
 
     @Override
-    public void deleteById(Integer id) {
+    public void deleteById(Long id) {
         transactionRepository.deleteById(id);
     }
 }
