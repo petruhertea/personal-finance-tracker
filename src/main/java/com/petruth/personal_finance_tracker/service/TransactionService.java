@@ -11,4 +11,5 @@ public interface TransactionService {
     void deleteById(Long id);
     Transaction findById(Long id);
     Transaction saveFromDTO(TransactionDTO transactionDTO);
+    List<TransactionDTO> findByUserIdAndTypeOrderByDate(int id, Transaction.TransactionType type);
 }

@@ -56,6 +56,15 @@ public class TransactionServiceImpl implements TransactionService{
         return transactionRepository.save(transaction);
     }
 
+    @Override
+    public List<TransactionDTO> findByUserIdAndTypeOrderByDate(int id, Transaction.TransactionType type) {
+        List<Transaction> dbTransactions = transactionRepository.findByUserIdAndTypeOrderByDate(id, type);
+
+        return dbTransactions.stream()
+                .map(transactionMapper::toTransactionDTO)
+                .collect(Collectors.toList());
+    }
+
 
     @Override
     public Transaction save(Transaction transaction) {

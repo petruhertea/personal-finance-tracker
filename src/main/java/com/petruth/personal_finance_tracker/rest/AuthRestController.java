@@ -6,10 +6,7 @@ import com.petruth.personal_finance_tracker.entity.User;
 import com.petruth.personal_finance_tracker.jwt.JwtUtil;
 import com.petruth.personal_finance_tracker.service.UserService;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -47,7 +44,7 @@ public class AuthRestController {
     @PostMapping("/login")
     public AuthResponse login(@RequestBody AuthRequest request) {
         User user = userService.findByUsername(request.getUsername());
-        System.out.println("Username"+request.getUsername());
+        System.out.println("Username: "+request.getUsername());
         if (user != null && passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             String token = jwtUtil.generateToken(user.getUsername(), user.getId());
             return new AuthResponse(token);
