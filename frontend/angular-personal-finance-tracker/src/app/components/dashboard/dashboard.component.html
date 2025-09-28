@@ -1,0 +1,37 @@
+<div class="overview">
+  <h2>Overview - {{ today | date:'MMMM yyyy' }}</h2>
+  <div class="container text-center">
+    <div class="row align-items-start">
+      <div class="col border">
+        <p><strong>Income: </strong><span style="color: lime;">{{ summary?.income | currency:"USD"}}</span></p>
+      </div>
+      <div class="col border">
+        <p><strong>Expense:</strong><span style="color:crimson;"> {{ summary?.expense | currency:"USD"}}</span></p>
+      </div>
+      <div class="col border">
+        <p><strong>Balance:</strong><span style="color:mediumpurple;"> {{ summary?.balance | currency:"USD"}}</span></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- Line Chart (3/4) -->
+  <div class="col-lg-9 col-md-9 col-sm-12">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <app-line-chart></app-line-chart>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pie Chart (1/4) -->
+  <div class="col-md-3 col-12">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h5 class="card-title">Income vs Expense</h5>
+        <app-pie-chart></app-pie-chart>
+      </div>
+    </div>
+  </div>
+</div>

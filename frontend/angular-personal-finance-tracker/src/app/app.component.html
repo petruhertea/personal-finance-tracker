@@ -1,0 +1,31 @@
+<div class="container-fluid vh-100 d-flex">
+  <div class="row h-100 w-100">
+    <!-- Sidebar -->
+    <ul class="nav nav-pills col-2 bg-dark text-white flex-column p-3">
+      <li class="nav-item">
+        <a routerLink="/profile" class="nav-link py-3 bg-secondary text-white">
+          <i class="bi bi-person"></i> {{ user?.username }}
+        </a>
+      </li>
+      <li class="nav-item">
+        <a routerLink="/dashboard" class="nav-link py-3 text-white rounded-0">
+          <i class="bi bi-house"></i> Home
+        </a>
+      </li>
+      <li class="nav-item">
+        <a routerLink="/transactions" class="nav-link text-white rounded-0">
+          <i class="bi bi-graph-up-arrow"></i> Transactions
+        </a>
+      </li>
+
+      <button class="btn btn-outline-danger mt-auto" (click)="logout()">
+        <i class="bi bi-box-arrow-left"></i> Logout
+      </button>
+    </ul>
+
+    <!-- Content (dynamic via router) -->
+    <main class="col-10 p-4">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

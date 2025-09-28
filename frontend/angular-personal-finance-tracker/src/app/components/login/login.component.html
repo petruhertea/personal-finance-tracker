@@ -1,0 +1,47 @@
+<div class="container">
+  <div class="row justify-content-center mt-5">
+    <div class="col lg-4 col md-8 col-sm-8">
+      <div class="card shadow">
+        <div class="card-title text-center border-bottom">
+          <h2 class="p-3">Login</h2>
+        </div>
+        <div class="card-body">
+          <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+
+            <div class="mb-4">
+              <label for="username" class="form-label">Username</label>
+              <input type="text" class="form-control" id="username" placeholder="examplename"
+                formControlName="username" />
+            </div>
+
+            <div
+              *ngIf="(loginForm.get('username')?.touched || loginForm.get('username')?.dirty) && loginForm.get('username')?.invalid"
+              class="text-danger">
+              <small *ngIf="loginForm.get('username')?.errors?.['required']">Username is required</small>
+              <small *ngIf="loginForm.get('username')?.errors?.['minlength']">
+                Username must be at least 3 characters long
+              </small>
+            </div>
+
+            <div class="mb-4">
+              <label for="password" class="form-label">Password</label>
+              <input type="password" class="form-control " id="password" formControlName="password" />
+            </div>
+            <div
+              *ngIf="(loginForm.get('password')?.touched || loginForm.get('password')?.dirty) && loginForm.get('password')?.invalid"
+              class="text-danger">
+              <small *ngIf="loginForm.get('password')?.errors?.['required']">Password is required</small>
+            </div>
+
+            <div class="d-grid">
+              <p class="text-center">Don't have an account? <a routerLink="/register">Sign Up</a></p>
+              <button type="submit" class="btn btn-primary">
+                Login
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
