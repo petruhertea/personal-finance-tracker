@@ -26,11 +26,6 @@ public class CategoryRestController {
         return categoryService.findByUserIsNull();
     }
 
-    @GetMapping("/user/{userId}")
-    public List<CategoryDTO> getCategoriesByUser(@PathVariable Long userId) {
-        return categoryService.getAllCategoriesForUser(userId);
-    }
-
     @PostMapping
     public CategoryDTO createCategory(@RequestBody CategoryDTO dto) {
         Category saved = categoryService.saveFromDTO(dto);

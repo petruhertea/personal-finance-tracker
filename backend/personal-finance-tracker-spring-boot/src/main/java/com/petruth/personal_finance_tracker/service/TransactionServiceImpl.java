@@ -5,10 +5,13 @@ import com.petruth.personal_finance_tracker.entity.Category;
 import com.petruth.personal_finance_tracker.entity.Transaction;
 import com.petruth.personal_finance_tracker.entity.User;
 import com.petruth.personal_finance_tracker.repository.TransactionRepository;
+import com.petruth.personal_finance_tracker.specifications.TransactionSpecifications;
 import com.petruth.personal_finance_tracker.utils.TransactionMapper;
-import org.springframework.data.domain.Limit;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -38,14 +41,42 @@ public class TransactionServiceImpl implements TransactionService{
     }
 
     @Override
-    public List<TransactionDTO> findByUserId(int id) {
-        List<Transaction> tempTransactions = transactionRepository.findByUserIdOrderByDateDesc(id);
+    public List<TransactionDTO> findByUserId(int userId, String type, String fromDate, String toDate,
+                                             Long categoryId, Double minAmount, Double maxAmount) {
 
-        return tempTransactions
+        Specification<Transaction> spec = Specification.unrestricted();
+
+        // fetch only items belonging to the user
+        spec = spec.and(TransactionSpecifications.belongsToUser(userId));
+
+        // apply filter criteria
+        if (type != null) {
+            spec = spec.and(TransactionSpecifications.hasType(Transaction.TransactionType.valueOf(type.toUpperCase())));
+        }
+        if (categoryId != null) {
+            spec = spec.and(TransactionSpecifications.hasCategory(categoryId));
+        }
+        if (minAmount != null) {
+            spec = spec.and(TransactionSpecifications.minAmount(minAmount));
+        }
+        if (maxAmount != null) {
+            spec = spec.and(TransactionSpecifications.maxAmount(maxAmount));
+        }
+        if (fromDate != null) {
+            spec = spec.and(TransactionSpecifications.dateAfter(LocalDateTime.parse(fromDate)));
+        }
+        if (toDate != null) {
+            spec = spec.and(TransactionSpecifications.dateBefore(LocalDateTime.parse(toDate)));
+        }
+
+        // fetch data after applying filtering criteria and use streams to map the returned list to TransactionDTO
+        return transactionRepository.findAll(spec, Sort.by(Sort.Direction.DESC, "date"))
                 .stream()
                 .map(transactionMapper::toTransactionDTO)
                 .collect(Collectors.toList());
     }
+
+
 
     // We use TransactionDTO for cleaner requests and responses
     @Override

@@ -1,10 +1,12 @@
 package com.petruth.personal_finance_tracker.rest;
 
+import com.petruth.personal_finance_tracker.dto.CategoryDTO;
 import com.petruth.personal_finance_tracker.dto.TransactionDTO;
 import com.petruth.personal_finance_tracker.dto.UserResponse;
 import com.petruth.personal_finance_tracker.entity.Transaction;
 import com.petruth.personal_finance_tracker.entity.User;
 import com.petruth.personal_finance_tracker.security.CustomUserDetails;
+import com.petruth.personal_finance_tracker.service.CategoryService;
 import com.petruth.personal_finance_tracker.service.TransactionService;
 import com.petruth.personal_finance_tracker.service.UserService;
 import org.springframework.security.core.Authentication;
@@ -19,22 +21,40 @@ public class UserRestController {
 
     private final TransactionService transactionService;
     private final UserService userService;
+    private final CategoryService categoryService;
+
     public UserRestController(TransactionService transactionService,
-                              UserService userService
+                              UserService userService,
+                              CategoryService categoryService
     ) {
         this.transactionService = transactionService;
         this.userService = userService;
+        this.categoryService = categoryService;
     }
 
-    @GetMapping("/{id}/transactions")
-    public List<TransactionDTO> getUserTransactions(@PathVariable int id) {
-        return transactionService.findByUserId(id);
+    @GetMapping("/{userId}/transactions")
+    public List<TransactionDTO> getUserTransactions(
+            @PathVariable int userId,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String fromDate,
+            @RequestParam(required = false) String toDate,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) Double minAmount,
+            @RequestParam(required = false) Double maxAmount
+    ) {
+        return transactionService.findByUserId(userId, type, fromDate, toDate,
+                categoryId, minAmount, maxAmount);
     }
 
-    @GetMapping("/{id}/transactions/chart")
-    public List<TransactionDTO> getUserChartTransactions(@PathVariable int id,
+    @GetMapping("/{userId}/categories")
+    public List<CategoryDTO> getCategoriesByUser(@PathVariable Long userId) {
+        return categoryService.getAllCategoriesForUser(userId);
+    }
+
+    @GetMapping("/{userId}/transactions/chart")
+    public List<TransactionDTO> getUserChartTransactions(@PathVariable int userId,
                                                          @RequestParam Transaction.TransactionType type) {
-        return transactionService.findByUserIdAndTypeOrderByDate(id, type);
+        return transactionService.findByUserIdAndTypeOrderByDate(userId, type);
     }
 
     @GetMapping("/me")

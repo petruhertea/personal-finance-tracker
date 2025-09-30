@@ -1,26 +1,29 @@
 import { Component, OnInit } from '@angular/core';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { AuthService } from './services/auth.service';
-import { StoredUser } from './common/stored-user';
+import { UserResponse } from './common/stored-user';
+import { CommonModule, NgIf } from '@angular/common';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink],
+  imports: [RouterOutlet, RouterLink, NgIf, CommonModule],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
-export class AppComponent implements OnInit{
+export class AppComponent implements OnInit {
   title = 'angular-personal-finance-tracker';
-  user: StoredUser | null = null;
-  
-  constructor(private authService: AuthService, private router: Router){}
+  user$: Observable<UserResponse | null>;
+
+  constructor(private authService: AuthService, private router: Router) {
+    this.user$ = this.authService.currentUser$;
+  }
 
   ngOnInit(): void {
-    this.authService.getUser().subscribe((storedUser: StoredUser | null) => {
-      if (!storedUser) {
-        this.router.navigate(['/login']); // redirect dacă nu e logat
-      } else {
-        this.user = storedUser;
+    // Dacă vrei redirect imediat când nu e user:
+    this.user$.subscribe(user => {
+      if (!user) {
+        this.router.navigate(['/login']);
       }
     });
   }

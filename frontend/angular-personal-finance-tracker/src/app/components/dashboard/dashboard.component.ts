@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LineChartComponent } from "../line-chart/line-chart.component";
-import { StoredUser } from '../../common/stored-user';
+import { UserResponse } from '../../common/stored-user';
 import { UserService } from '../../services/user.service';
 import { PieChartComponent } from "../pie-chart/pie-chart.component";
 
@@ -12,7 +12,7 @@ import { PieChartComponent } from "../pie-chart/pie-chart.component";
   styleUrl: './dashboard.component.css'
 })
 export class DashboardComponent {
-  user?: StoredUser | null;
+  user?: UserResponse | null;
 
   constructor(private userService: UserService) { }
 
