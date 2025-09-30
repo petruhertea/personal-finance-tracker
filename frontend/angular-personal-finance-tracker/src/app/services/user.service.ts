@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { AuthService } from './auth.service';
 import { map, Observable, switchMap, tap } from 'rxjs';
 import { Transaction } from '../common/transaction';
-import { StoredUser } from '../common/stored-user';
+import { UserResponse } from '../common/stored-user';
 
 @Injectable({
   providedIn: 'root'
@@ -17,7 +17,7 @@ export class UserService {
 
   getChart(type?: string): Observable<Transaction[]> {
     return this.authService.getUser().pipe(
-      map((user: StoredUser) => {
+      map((user: UserResponse) => {
         if (!user) {
           throw new Error('User is not authenticated.');
         }
@@ -29,7 +29,7 @@ export class UserService {
       // Use tap to process transactions
       // Use type assertion for Transaction[]
       // Use correct endpoint based on type
-      switchMap((user: StoredUser) => {
+      switchMap((user: UserResponse) => {
         if (type == null) {
           return this.http.get<Transaction[]>(`${this.apiUrl}/${user.id}/transactions`).pipe(
             tap((transactions: Transaction[]) => {

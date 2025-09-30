@@ -1,1 +1,62 @@
-<p>transaction works!</p>
+<!-- TO DO: Apply CSS styles-->
+<div class="filters" *ngIf="filterForm">
+  <form [formGroup]="filterForm">
+    <select formControlName="type">
+      <option value="">All</option>
+      <option value="INCOME">Income</option>
+      <option value="EXPENSE">Expense</option>
+    </select>
+    <select formControlName="categoryId">
+      <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
+    </select>
+    <input type="datetime-local" formControlName="fromDate">
+    <input type="datetime-local" formControlName="toDate">
+    <input type="number" placeholder="Min amount" formControlName="minAmount">
+    <input type="number" placeholder="Max amount" formControlName="maxAmount">
+  </form>
+</div>
+
+
+  <table class="table table-bordered table-hover">
+    <thead class="table-primary">
+      <tr>
+        <th>Date</th>
+        <th>Type</th>
+        <th>Amount</th>
+        <th>Category</th>
+        <th>Description</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let tx of transactions">
+        <td>{{ tx.date | date:'short' }}</td>
+        <td>{{ tx.type }}</td>
+        <td>{{ tx.amount }}</td>
+        <td>{{ tx.categoryName }}</td>
+        <td>{{ tx.description }}</td>
+        <td>
+          <button class="btn btn-primary" (click)="startEdit(tx)">Edit</button>
+          <button class="btn btn-danger ms-3" (click)="deleteTransaction(tx.id!)">Delete</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+
+<div class="transaction-form" *ngIf="transactionForm">
+  <form [formGroup]="transactionForm" (ngSubmit)="saveTransaction()">
+    <input type="number" formControlName="amount" placeholder="Amount">
+    <select formControlName="type">
+      <option value="INCOME">Income</option>
+      <option value="EXPENSE">Expense</option>
+    </select>
+    <input type="text" formControlName="description" placeholder="Description">
+    <input type="date" formControlName="date">
+    <select formControlName="categoryId">
+      <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
+    </select>
+    <button type="submit">{{ editingTransaction ? 'Update' : 'Add' }}</button>
+    <button type="button" (click)="cancelEdit()">Cancel</button>
+  </form>
+</div>

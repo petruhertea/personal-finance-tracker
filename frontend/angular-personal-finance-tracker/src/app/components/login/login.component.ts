@@ -1,20 +1,20 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
-import { StoredUser } from '../../common/stored-user';
+import { UserResponse } from '../../common/stored-user';
 import { MyCustomValidator } from '../../validators/my-custom-validator';
 import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-login',
   templateUrl: './login.component.html',
-  imports: [CommonModule, ReactiveFormsModule]
+  imports: [CommonModule, ReactiveFormsModule, RouterLink]
 })
 export class LoginComponent implements OnInit {
 
   loginForm!: FormGroup;
-  currentUser!: StoredUser | null;
+  currentUser!: UserResponse | null;
   loginError: string | null = null;
 
   constructor(
@@ -41,7 +41,7 @@ export class LoginComponent implements OnInit {
     const credentials = this.loginForm.value;
 
     this.authService.login(credentials).subscribe({
-      next: (user: StoredUser) => {
+      next: (user: UserResponse) => {
         this.currentUser = user;
         this.router.navigate(['/dashboard']);
       },

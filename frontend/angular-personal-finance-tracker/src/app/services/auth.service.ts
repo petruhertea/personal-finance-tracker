@@ -3,17 +3,18 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, switchMap, tap } from 'rxjs';
 import { User } from '../common/user';
-import { StoredUser } from '../common/stored-user';
+import { UserResponse } from '../common/stored-user';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
 
-  private authUrl = 'http://localhost:8080/api/auth'; // backend-ul tău
-  private userUrl = 'http://localhost:8080/api/users'; 
+  private authUrl = 'http://localhost:8080/api/auth';
+  private userUrl = 'http://localhost:8080/api/users';
   private tokenKey = 'jwt_token';
-  private currentUser: BehaviorSubject<StoredUser | null> = new BehaviorSubject<StoredUser | null>(JSON.parse(localStorage.getItem('user') || 'null'));
+  private currentUser: BehaviorSubject<UserResponse | null> = new BehaviorSubject<UserResponse | null>(null);
+  currentUser$: Observable<UserResponse | null> = this.currentUser.asObservable();
 
   constructor(private http: HttpClient) { }
 
@@ -22,13 +23,15 @@ export class AuthService {
       tap(response => {
         localStorage.setItem('jwt_token', response.token);
       }),
-      switchMap(() => this.getUser()) // după login, ia și datele user-ului
+      switchMap(() => this.getUser()),
+      tap(user => {
+        this.currentUser.next(user);
+      })
     );
   }
 
   getUser() {
-    
-    return this.http.get<StoredUser>(`${this.userUrl}/me`).pipe(
+    return this.http.get<UserResponse>(`${this.userUrl}/me`).pipe(
       tap(user => this.currentUser.next(user))
     );
   }
@@ -46,9 +49,22 @@ export class AuthService {
     return localStorage.getItem(this.tokenKey);
   }
 
-  isAuthenticated(): boolean {
-    return !!this.getToken();
+  isTokenExpired(token: string): boolean {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const expiry = payload.exp * 1000;
+      return Date.now() > expiry;
+    } catch {
+      // token is expired
+      return true;
+    }
   }
+
+  isAuthenticated(): boolean {
+    const token = this.getToken();
+    return token != null && !this.isTokenExpired(token);
+  }
+
 
 
 }
