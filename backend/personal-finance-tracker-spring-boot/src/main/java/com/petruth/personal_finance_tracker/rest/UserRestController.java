@@ -1,11 +1,13 @@
 package com.petruth.personal_finance_tracker.rest;
 
+import com.petruth.personal_finance_tracker.dto.BudgetDTO;
 import com.petruth.personal_finance_tracker.dto.CategoryDTO;
 import com.petruth.personal_finance_tracker.dto.TransactionDTO;
 import com.petruth.personal_finance_tracker.dto.UserResponse;
 import com.petruth.personal_finance_tracker.entity.Transaction;
 import com.petruth.personal_finance_tracker.entity.User;
 import com.petruth.personal_finance_tracker.security.CustomUserDetails;
+import com.petruth.personal_finance_tracker.service.BudgetService;
 import com.petruth.personal_finance_tracker.service.CategoryService;
 import com.petruth.personal_finance_tracker.service.TransactionService;
 import com.petruth.personal_finance_tracker.service.UserService;
@@ -22,14 +24,17 @@ public class UserRestController {
     private final TransactionService transactionService;
     private final UserService userService;
     private final CategoryService categoryService;
+    private final BudgetService budgetService;
 
     public UserRestController(TransactionService transactionService,
                               UserService userService,
-                              CategoryService categoryService
+                              CategoryService categoryService,
+                              BudgetService budgetService
     ) {
         this.transactionService = transactionService;
         this.userService = userService;
         this.categoryService = categoryService;
+        this.budgetService = budgetService;
     }
 
     @GetMapping("/{userId}/transactions")
@@ -55,6 +60,11 @@ public class UserRestController {
     public List<TransactionDTO> getUserChartTransactions(@PathVariable int userId,
                                                          @RequestParam Transaction.TransactionType type) {
         return transactionService.findByUserIdAndTypeOrderByDate(userId, type);
+    }
+
+    @GetMapping("/{userId}/budgets")
+    public List<BudgetDTO> getBudgetsByUser(@PathVariable Long userId) {
+        return budgetService.findByUserId(userId);
     }
 
     @GetMapping("/me")

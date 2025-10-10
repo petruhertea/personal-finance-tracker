@@ -21,18 +21,13 @@ public class BudgetRestController {
         return budgetService.createBudget(budgetDTO);
     }
 
-    @GetMapping("/user/{userId}")
-    public List<BudgetDTO> getByUser(@PathVariable Long userId) {
-        return budgetService.findByUserId(userId);
-    }
-
     @PutMapping("/{id}")
-    public BudgetDTO update(@PathVariable Long id, @RequestBody BudgetDTO budgetDTO) {
+    public BudgetDTO updateBudget(@PathVariable Long id, @RequestBody BudgetDTO budgetDTO) {
         return budgetService.updateBudget(id, budgetDTO);
     }
 
     @DeleteMapping("/{id}")
-    public String delete(@PathVariable Long id) {
+    public String deleteBudget(@PathVariable Long id) {
         Budget tempBudget = budgetService.findById(id);
 
         if(tempBudget==null){
@@ -40,7 +35,7 @@ public class BudgetRestController {
         } else{
             budgetService.deleteById(id);
         }
-        return "Budget deleted successfully!";
+        return "Budget id -> "+id+" deleted successfully!";
     }
 }
 
