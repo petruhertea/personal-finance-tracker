@@ -1,0 +1,35 @@
+/* highlight nav items */
+.nav .nav-item a.nav-link.active {
+  background: linear-gradient(90deg, #4e73df 0%, #224abe 100%);
+  color: #fff !important;
+  border-radius: 8px;
+}
+
+.navbar .nav-link.active i {
+  color: var(--bs-primary);
+}
+
+
+/* extended sidebar */
+.sidebar {
+  transition: all 0.3s ease;
+  width: 200px;
+}
+
+/* collapsed sidebar */
+.sidebar.collapsed {
+  width: 70px;
+}
+
+.sidebar.collapsed .nav-link {
+  justify-content: center;
+  text-align: center;
+}
+
+.sidebar.collapsed .nav-link i {
+  margin: 0;
+}
+
+.sidebar.collapsed .nav-link span {
+  display: none;
+}

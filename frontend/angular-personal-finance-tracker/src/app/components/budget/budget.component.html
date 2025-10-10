@@ -1,0 +1,64 @@
+<div class="container-fluid">
+
+  <!-- Bugete existente -->
+  <table class="table table-bordered table-hover">
+    <thead class="table-primary">
+      <tr>
+        <th>Amount</th>
+        <th>Category</th>
+        <th>Start Date</th>
+        <th>End Date</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let budget of budgetList">
+        <td>{{ budget.amount | currency }}</td>
+        <td>{{ budget.categoryName }}</td>
+        <td>{{ budget.startDate | date:'shortDate' }}</td>
+        <td>{{ budget.endDate | date:'shortDate' }}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-primary me-2" (click)="editBudget(budget)">
+            <i class="bi bi-pencil-fill"></i>
+          </button>
+          <button class="btn btn-sm btn-outline-danger" (click)="deleteBudget(budget.id!)">
+            <i class="bi bi-trash-fill"></i>
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Formular adaugare / editare -->
+  <div class="card p-3 mt-4" *ngIf="budgetForm">
+    <h5>{{ editingBudget ? 'Edit Budget' : 'Add Budget' }}</h5>
+    <form [formGroup]="budgetForm" (ngSubmit)="saveBudget()">
+      <div class="mb-3">
+        <label>Amount</label>
+        <input type="number" formControlName="amount" class="form-control">
+      </div>
+
+      <div class="mb-3">
+        <label>Category</label>
+        <select formControlName="categoryId" class="form-select">
+          <option [ngValue]="null" disabled>Select a category</option>
+          <option *ngFor="let cat of categories" [ngValue]="cat.id">{{ cat.name }}</option>
+        </select>
+      </div>
+
+
+      <div class="mb-3">
+        <label>Start Date</label>
+        <input type="date" formControlName="startDate" class="form-control">
+      </div>
+
+      <div class="mb-3">
+        <label>End Date</label>
+        <input type="date" formControlName="endDate" class="form-control">
+      </div>
+
+      <button type="submit" class="btn btn-success me-2">{{ editingBudget ? 'Update' : 'Add' }}</button>
+      <button type="button" class="btn btn-secondary" (click)="cancelEdit()" *ngIf="editingBudget">Cancel</button>
+    </form>
+  </div>
+</div>

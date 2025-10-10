@@ -1,31 +1,43 @@
-<div class="container-fluid vh-100 d-flex">
-  <div class="row h-100 w-100">
-    <!-- Sidebar -->
-    <ul class="nav nav-pills col-2 bg-dark text-white flex-column p-3">
-      <li class="nav-item">
-        <a routerLink="/profile" class="nav-link py-3 bg-secondary text-white">
-          <div *ngIf="user$ | async as user"><i class="bi bi-person"></i> {{ user.username }}</div>
-        </a>
-      </li>
-      <li class="nav-item">
-        <a routerLink="/dashboard" class="nav-link py-3 text-white rounded-0">
-          <i class="bi bi-house"></i> Home
-        </a>
-      </li>
-      <li class="nav-item">
-        <a routerLink="/transactions" class="nav-link text-white rounded-0">
-          <i class="bi bi-graph-up-arrow"></i> Transactions
-        </a>
-      </li>
+<div class="container-fluid vh-100 d-flex flex-column">
+  <div class="row flex-grow-1 w-100">
 
-      <button class="btn btn-outline-danger mt-auto" (click)="logout()">
-        <i class="bi bi-box-arrow-left"></i> Logout
-      </button>
+    <!-- Sidebar (desktop) -->
+    <ul class="nav nav-pills col-2 bg-dark text-white flex-column p-0 sidebar d-none d-md-flex" [class.collapsed]="isCollapsed">
+      <li class="nav-item" *ngFor="let link of links">
+        <a [routerLink]="link.path" routerLinkActive="active"
+          class="nav-link py-3 text-white rounded-0 d-flex align-items-center">
+          <i [class]="link.icon"></i>
+          <span class="ms-2" *ngIf="!isCollapsed">{{ link.label }}</span>
+        </a>
+      </li>
+      <div class="mt-auto border-top">
+        <button class="nav-link btn btn-link p-3 text-white w-100" (click)="toggleSidebar()">
+          <i class="bi bi-arrows-collapse-vertical"></i>
+        </button>
+        <button class="btn btn-outline-danger w-100" (click)="logout()">
+          <i class="bi bi-box-arrow-left"></i>
+          <span *ngIf="!isCollapsed">Logout</span>
+        </button>
+      </div>
     </ul>
 
-    <!-- Content (dynamic via router) -->
-    <main class="col-10 p-4">
+
+
+    <!-- Content -->
+    <main class="col p-4">
       <router-outlet></router-outlet>
     </main>
   </div>
+
+  <!-- Bottom nav (mobile) -->
+  <nav class="navbar navbar-dark bg-dark d-flex d-md-none fixed-bottom justify-content-around">
+    <a *ngFor="let link of links" [routerLink]="link.path" routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }" class="nav-link text-white text-center">
+      <i [class]="link.icon + ' fs-4'"></i>
+    </a>
+    <a (click)="logout()" class="nav-link text-danger text-center">
+      <i class="bi bi-box-arrow-left fs-4"></i>
+    </a>
+  </nav>
+
 </div>

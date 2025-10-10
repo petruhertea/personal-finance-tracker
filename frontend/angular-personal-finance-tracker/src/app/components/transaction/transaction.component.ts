@@ -17,7 +17,7 @@ import { Category } from '../../common/category';
   styleUrl: './transaction.component.css'
 })
 export class TransactionsComponent implements OnInit {
-  currentUser!: UserResponse; // adaugă asta
+  currentUser!: UserResponse;
   transactions: Transaction[] = [];
   filterForm!: FormGroup;
   transactionForm!: FormGroup;
@@ -85,13 +85,13 @@ export class TransactionsComponent implements OnInit {
 
   startEdit(tx: Transaction) {
     this.editingTransaction = tx;
-    const dateTime = tx.date.toISOString().substring(0, 16); // "2025-09-24"
+    const dateTime = new Date(tx.date!).toISOString().substring(0, 16); // "2025-09-24"
     this.transactionForm.patchValue({
       amount: tx.amount,
       type: tx.type,
       description: tx.description,
       categoryId: tx.categoryId,
-      date: tx.date ? tx.date.toISOString().substring(0, 10) : '' // ia doar yyyy-MM-dd
+      date: dateTime
     });
 
   }

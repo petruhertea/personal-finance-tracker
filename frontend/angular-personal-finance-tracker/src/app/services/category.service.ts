@@ -11,7 +11,6 @@ export class CategoryService {
 
   private userUrl = 'http://localhost:8080/api/users';
 
-
   constructor(private authService: AuthService, private http: HttpClient) { }
 
   getCategories(userId: number): Observable<Category[]> {
