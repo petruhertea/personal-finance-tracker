@@ -1,3 +1,4 @@
+// Enhanced JwtAuthFilter to store userId in authentication
 package com.petruth.personal_finance_tracker.security;
 
 import com.petruth.personal_finance_tracker.jwt.JwtUtil;
@@ -30,7 +31,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         String path = request.getServletPath();
         if (path.startsWith("/api/auth/")) {
-            filterChain.doFilter(request, response); // skip JWT validation
+            filterChain.doFilter(request, response);
             return;
         }
 
@@ -41,19 +42,25 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return;
         }
 
-        String token = authHeader.substring(7);
-        Claims claims = jwtUtil.extractClaims(token);
-        String username = claims.getSubject();
+        try {
+            String token = authHeader.substring(7);
+            Claims claims = jwtUtil.extractClaims(token);
+            String username = claims.getSubject();
+            Long userId = claims.get("userId", Long.class);
 
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UsernamePasswordAuthenticationToken authToken =
-                    new UsernamePasswordAuthenticationToken(username, null, null);
-            authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(authToken);
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                // Store userId in authentication for easy access
+                UsernamePasswordAuthenticationToken authToken =
+                        new UsernamePasswordAuthenticationToken(username, null, null);
+
+                // Store the full claims as details
+                authToken.setDetails(claims);
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+            }
+        } catch (Exception e) {
+            logger.error("JWT validation failed", e);
         }
 
         filterChain.doFilter(request, response);
     }
 }
-
-

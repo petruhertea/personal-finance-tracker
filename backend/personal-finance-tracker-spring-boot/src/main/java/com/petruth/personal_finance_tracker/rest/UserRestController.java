@@ -6,13 +6,11 @@ import com.petruth.personal_finance_tracker.dto.TransactionDTO;
 import com.petruth.personal_finance_tracker.dto.UserResponse;
 import com.petruth.personal_finance_tracker.entity.Transaction;
 import com.petruth.personal_finance_tracker.entity.User;
-import com.petruth.personal_finance_tracker.security.CustomUserDetails;
+import com.petruth.personal_finance_tracker.security.SecurityUtil;
 import com.petruth.personal_finance_tracker.service.BudgetService;
 import com.petruth.personal_finance_tracker.service.CategoryService;
 import com.petruth.personal_finance_tracker.service.TransactionService;
 import com.petruth.personal_finance_tracker.service.UserService;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,21 +23,30 @@ public class UserRestController {
     private final UserService userService;
     private final CategoryService categoryService;
     private final BudgetService budgetService;
+    private final SecurityUtil securityUtil;
 
     public UserRestController(TransactionService transactionService,
                               UserService userService,
                               CategoryService categoryService,
-                              BudgetService budgetService
-    ) {
+                              BudgetService budgetService,
+                              SecurityUtil securityUtil) {
         this.transactionService = transactionService;
         this.userService = userService;
         this.categoryService = categoryService;
         this.budgetService = budgetService;
+        this.securityUtil = securityUtil;
+    }
+
+    // Validate that the requesting user matches the userId in path
+    private void validateUserAccess(Long userId) {
+        if (!securityUtil.isCurrentUser(userId)) {
+            throw new SecurityException("Unauthorized access to user data");
+        }
     }
 
     @GetMapping("/{userId}/transactions")
     public List<TransactionDTO> getUserTransactions(
-            @PathVariable int userId,
+            @PathVariable Long userId,
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String fromDate,
             @RequestParam(required = false) String toDate,
@@ -47,38 +54,39 @@ public class UserRestController {
             @RequestParam(required = false) Double minAmount,
             @RequestParam(required = false) Double maxAmount
     ) {
-        return transactionService.findByUserId(userId, type, fromDate, toDate,
+        validateUserAccess(userId);
+        return transactionService.findByUserId(userId.intValue(), type, fromDate, toDate,
                 categoryId, minAmount, maxAmount);
+    }
+
+    @GetMapping("/{userId}/transactions/chart")
+    public List<TransactionDTO> getUserChartTransactions(@PathVariable Long userId,
+                                                         @RequestParam Transaction.TransactionType type) {
+        validateUserAccess(userId);
+        return transactionService.findByUserIdAndTypeOrderByDate(userId.intValue(), type);
     }
 
     @GetMapping("/{userId}/categories")
     public List<CategoryDTO> getCategoriesByUser(@PathVariable Long userId) {
+        validateUserAccess(userId);
         return categoryService.getAllCategoriesForUser(userId);
-    }
-
-    @GetMapping("/{userId}/transactions/chart")
-    public List<TransactionDTO> getUserChartTransactions(@PathVariable int userId,
-                                                         @RequestParam Transaction.TransactionType type) {
-        return transactionService.findByUserIdAndTypeOrderByDate(userId, type);
     }
 
     @GetMapping("/{userId}/budgets")
     public List<BudgetDTO> getBudgetsByUser(@PathVariable Long userId) {
+        validateUserAccess(userId);
         return budgetService.findByUserId(userId);
     }
 
     @GetMapping("/me")
-    public UserResponse getCurrentUser(Authentication authentication) {
-        String username = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    public UserResponse getCurrentUser() {
+        String username = securityUtil.getCurrentUsername();
         User user = userService.findByUsername(username);
 
-
-        UserResponse userResponse = new UserResponse(
+        return new UserResponse(
                 user.getId(),
                 user.getUsername(),
                 user.getEmail()
         );
-
-        return userResponse;
     }
 }
