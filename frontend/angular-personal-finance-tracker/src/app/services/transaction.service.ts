@@ -3,14 +3,15 @@ import { Injectable } from "@angular/core";
 import { AuthService } from "../services/auth.service";
 import { Transaction } from "../common/transaction";
 import { Observable } from "rxjs";
+import { environment } from "../../environments/environment";
 
 // transaction.service.ts
 @Injectable({
   providedIn: 'root'
 })
 export class TransactionService {
-  private apiUrl = 'http://localhost:8080/api/transactions';
-  private userUrl = 'http://localhost:8080/api/users';
+  private apiUrl = `${environment.apiUrl}/transactions`;
+  private userUrl = `${environment.apiUrl}/users`;
 
   constructor(private http: HttpClient, private auth: AuthService) { }
 

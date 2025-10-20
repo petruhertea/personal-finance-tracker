@@ -4,7 +4,7 @@ import { BudgetDto } from '../../common/budget-dto';
 import { BudgetView } from '../../common/budget-view';
 import { BudgetService } from '../../services/budget.service';
 import { AuthService } from '../../services/auth.service';
-import { UserResponse } from '../../common/stored-user';
+import { UserResponse } from '../../common/user-response';
 import { Category } from '../../common/category';
 import { CommonModule } from '@angular/common';
 import { CategoryService } from '../../services/category.service';

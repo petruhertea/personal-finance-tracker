@@ -1,1 +1,15 @@
-<p>profile works!</p>
+<div class="container">
+    <div class="row justify-content-center mt-5">
+        <div class="col lg-4 col md-8 col-sm-8">
+            <div class="card shadow">
+                <div class="card-title text-center border-bottom">
+                    <h2 class="p-3">Profile</h2>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">Your username: {{ currentUser?.username }}</div>
+                    <div class="mb-4">Your email: {{ currentUser?.email }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

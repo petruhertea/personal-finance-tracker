@@ -3,15 +3,16 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, switchMap, tap } from 'rxjs';
 import { User } from '../common/user';
-import { UserResponse } from '../common/stored-user';
+import { UserResponse } from '../common/user-response';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
 
-  private authUrl = 'http://localhost:8080/api/auth';
-  private userUrl = 'http://localhost:8080/api/users';
+  private authUrl = `${environment.apiUrl}/auth`;
+  private userUrl = `${environment.apiUrl}/users`;
   private tokenKey = 'jwt_token';
   private currentUser: BehaviorSubject<UserResponse | null> = new BehaviorSubject<UserResponse | null>(null);
   currentUser$: Observable<UserResponse | null> = this.currentUser.asObservable();

@@ -4,13 +4,14 @@ import { Observable, forkJoin, map } from 'rxjs';
 import { BudgetDto } from '../common/budget-dto';
 import { Category } from '../common/category';
 import { BudgetView } from '../common/budget-view';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class BudgetService {
-  private budgetUrl = "http://localhost:8080/api/budgets";
-  private userUrl = "http://localhost:8080/api/users";
+  private budgetUrl = `${environment.apiUrl}/budgets`;
+  private userUrl = `${environment.apiUrl}/users`;
 
   constructor(private http: HttpClient) {}
 

@@ -3,14 +3,15 @@ import { Injectable } from '@angular/core';
 import { AuthService } from './auth.service';
 import { map, Observable, switchMap, tap } from 'rxjs';
 import { Transaction } from '../common/transaction';
-import { UserResponse } from '../common/stored-user';
+import { UserResponse } from '../common/user-response';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class UserService {
 
-  private apiUrl = 'http://localhost:8080/api/users'; // backend-ul tău
+  private userUrl = `${environment.apiUrl}/users`;
   private transactionList!: Transaction[];
 
   constructor(private http: HttpClient, private authService: AuthService) { }
@@ -31,13 +32,13 @@ export class UserService {
       // Use correct endpoint based on type
       switchMap((user: UserResponse) => {
         if (type == null) {
-          return this.http.get<Transaction[]>(`${this.apiUrl}/${user.id}/transactions`).pipe(
+          return this.http.get<Transaction[]>(`${this.userUrl}/${user.id}/transactions`).pipe(
             tap((transactions: Transaction[]) => {
               this.transactionList = transactions;
             })
           );
         } else {
-          return this.http.get<Transaction[]>(`${this.apiUrl}/${user.id}/transactions/chart?type=${type}`).pipe(
+          return this.http.get<Transaction[]>(`${this.userUrl}/${user.id}/transactions/chart?type=${type}`).pipe(
             tap((transactions: Transaction[]) => {
               this.transactionList = transactions;
             })

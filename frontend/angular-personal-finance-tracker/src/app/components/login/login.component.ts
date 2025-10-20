@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
-import { UserResponse } from '../../common/stored-user';
+import { UserResponse } from '../../common/user-response';
 import { MyCustomValidator } from '../../validators/my-custom-validator';
 import { CommonModule } from '@angular/common';
 

@@ -1,43 +1,70 @@
-<div class="container-fluid vh-100 d-flex flex-column">
-  <div class="row flex-grow-1 w-100">
+<!-- app.component.html -->
+<div class="container-fluid vh-100 d-flex flex-column p-0">
+  <div class="row flex-grow-1 g-0">
 
-    <!-- Sidebar (desktop) -->
-    <ul class="nav nav-pills col-2 bg-dark text-white flex-column p-0 sidebar d-none d-md-flex" [class.collapsed]="isCollapsed">
-      <li class="nav-item" *ngFor="let link of links">
-        <a [routerLink]="link.path" routerLinkActive="active"
-          class="nav-link py-3 text-white rounded-0 d-flex align-items-center">
-          <i [class]="link.icon"></i>
-          <span class="ms-2" *ngIf="!isCollapsed">{{ link.label }}</span>
-        </a>
-      </li>
-      <div class="mt-auto border-top">
-        <button class="nav-link btn btn-link p-3 text-white w-100" (click)="toggleSidebar()">
-          <i class="bi bi-arrows-collapse-vertical"></i>
+    <!-- Mobile Header -->
+    <nav class="navbar navbar-dark bg-dark d-md-none">
+      <div class="container-fluid">
+        <button class="btn btn-link text-white" (click)="toggleSidebar()">
+          <i class="bi bi-list fs-4"></i>
         </button>
-        <button class="btn btn-outline-danger w-100" (click)="logout()">
-          <i class="bi bi-box-arrow-left"></i>
-          <span *ngIf="!isCollapsed">Logout</span>
+        <span class="navbar-brand mb-0">Finance Tracker</span>
+        <button class="btn btn-link text-danger" (click)="logout()">
+          <i class="bi bi-box-arrow-left fs-4"></i>
         </button>
       </div>
-    </ul>
+    </nav>
 
+    <!-- Overlay for mobile sidebar -->
+    <div
+      class="sidebar-overlay d-md-none"
+      [class.show]="isSidebarOpen"
+      (click)="closeSidebar()">
+    </div>
 
+    <!-- Sidebar -->
+    <aside
+      class="sidebar bg-dark text-white d-flex flex-column"
+      [class.collapsed]="isCollapsed && !isMobile"
+      [class.mobile-open]="isSidebarOpen">
 
-    <!-- Content -->
-    <main class="col p-4">
+      <!-- Desktop toggle button -->
+      <button
+        class="btn btn-link text-white d-none d-md-block border-bottom"
+        (click)="toggleSidebar()">
+        <i class="bi" [class.bi-chevron-left]="!isCollapsed"
+           [class.bi-chevron-right]="isCollapsed"></i>
+        <span *ngIf="!isCollapsed" class="ms-2">Collapse</span>
+      </button>
+
+      <!-- Navigation Links -->
+      <ul class="nav nav-pills flex-column flex-grow-1 p-0">
+        <li class="nav-item" *ngFor="let link of links">
+          <a
+            [routerLink]="link.path"
+            routerLinkActive="active"
+            (click)="closeSidebar()"
+            class="nav-link py-3 text-white rounded-0 d-flex align-items-center">
+            <i [class]="link.icon"></i>
+            <span class="ms-2" [class.d-none]="isCollapsed && !isMobile">
+              {{ link.label }}
+            </span>
+          </a>
+        </li>
+      </ul>
+
+      <!-- Desktop Logout -->
+      <div class="mt-auto border-top d-none d-md-block">
+        <button class="btn btn-outline-danger w-100 rounded-0" (click)="logout()">
+          <i class="bi bi-box-arrow-left"></i>
+          <span *ngIf="!isCollapsed" class="ms-2">Logout</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content flex-grow-1 p-3 p-md-4 overflow-auto">
       <router-outlet></router-outlet>
     </main>
   </div>
-
-  <!-- Bottom nav (mobile) -->
-  <nav class="navbar navbar-dark bg-dark d-flex d-md-none fixed-bottom justify-content-around">
-    <a *ngFor="let link of links" [routerLink]="link.path" routerLinkActive="active"
-      [routerLinkActiveOptions]="{ exact: true }" class="nav-link text-white text-center">
-      <i [class]="link.icon + ' fs-4'"></i>
-    </a>
-    <a (click)="logout()" class="nav-link text-danger text-center">
-      <i class="bi bi-box-arrow-left fs-4"></i>
-    </a>
-  </nav>
-
 </div>

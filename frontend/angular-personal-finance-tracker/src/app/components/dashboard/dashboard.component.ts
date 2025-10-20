@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LineChartComponent } from "../line-chart/line-chart.component";
-import { UserResponse } from '../../common/stored-user';
+import { UserResponse } from '../../common/user-response';
 import { UserService } from '../../services/user.service';
 import { PieChartComponent } from "../pie-chart/pie-chart.component";
 
