@@ -7,7 +7,7 @@ import { AuthService } from '../../services/auth.service';
 import { CategoryService } from '../../services/category.service';
 import { Category } from '../../common/category';
 import { UserResponse } from '../../common/user-response';
-import { finalize } from 'rxjs';
+import { finalize, debounceTime } from 'rxjs';
 import { LoadingSpinnerComponent } from '../loading-spinner/loading-spinner.component';
 import { ErrorMessageComponent } from '../error-message/error-message.component';
 import { UserService } from '../../services/user.service';
@@ -74,16 +74,23 @@ export class TransactionComponent implements OnInit {
   }
 
   initFilterForm() {
+    // Initialize with null instead of empty strings
     this.filterForm = this.fb.group({
-      type: [''],
-      categoryId: [''],
-      fromDate: [''],
-      toDate: [''],
-      minAmount: [''],
-      maxAmount: ['']
+      type: [null],
+      categoryId: [null],
+      fromDate: [null],
+      toDate: [null],
+      minAmount: [null],
+      maxAmount: [null]
     });
 
-    this.filterForm.valueChanges.subscribe(() => this.loadTransactions());
+    // Add debounce to prevent too many requests
+    this.filterForm.valueChanges
+      .pipe(debounceTime(300))
+      .subscribe(() => {
+        console.log('Filter changed:', this.filterForm.value);
+        this.loadTransactions();
+      });
   }
 
   initTransactionForm() {
@@ -98,9 +105,9 @@ export class TransactionComponent implements OnInit {
 
   loadTransactions() {
     this.isLoading = true;
-    const filters = this.filterForm.value;
+    const filters = this.buildFilters();
 
-    console.log(filters);
+    console.log('Loading transactions with filters:', filters);
 
     this.transactionService.getTransactions(this.currentUser.id, filters)
       .pipe(finalize(() => this.isLoading = false))
@@ -108,12 +115,41 @@ export class TransactionComponent implements OnInit {
         next: (txs: Transaction[]) => {
           this.transactions = txs;
           this.errorMessage = '';
+          console.log('Loaded transactions:', txs.length);
         },
         error: err => {
           this.errorMessage = 'Failed to load transactions';
           console.error('Error loading transactions', err);
         }
       });
+  }
+
+  // Build filters object, excluding null/empty values
+  private buildFilters(): any {
+    const formValue = this.filterForm.value;
+    const filters: any = {};
+
+    // Only include non-null, non-empty values
+    if (formValue.type && formValue.type !== '') {
+      filters.type = formValue.type;
+    }
+    if (formValue.categoryId && formValue.categoryId !== '') {
+      filters.categoryId = formValue.categoryId;
+    }
+    if (formValue.fromDate && formValue.fromDate !== '') {
+      filters.fromDate = formValue.fromDate;
+    }
+    if (formValue.toDate && formValue.toDate !== '') {
+      filters.toDate = formValue.toDate;
+    }
+    if (formValue.minAmount !== null && formValue.minAmount !== '') {
+      filters.minAmount = formValue.minAmount;
+    }
+    if (formValue.maxAmount !== null && formValue.maxAmount !== '') {
+      filters.maxAmount = formValue.maxAmount;
+    }
+
+    return filters;
   }
 
   startEdit(tx: Transaction) {
@@ -191,5 +227,16 @@ export class TransactionComponent implements OnInit {
 
   clearError() {
     this.errorMessage = '';
+  }
+  
+  resetFilters() {
+    this.filterForm.reset({
+      type: '',
+      categoryId: '',
+      fromDate: '',
+      toDate: '',
+      minAmount: '',
+      maxAmount: ''
+    });
   }
 }

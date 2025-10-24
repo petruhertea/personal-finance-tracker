@@ -1,37 +1,277 @@
-<div class="overview">
-  <h2>Overview - {{ today | date:'MMMM yyyy' }}</h2>
-  <div class="container text-center">
-    <div class="row align-items-start">
-      <div class="col border">
-        <p><strong>Income: </strong><span style="color: lime;">{{ summary?.income | currency:"USD"}}</span></p>
-      </div>
-      <div class="col border">
-        <p><strong>Expense:</strong><span style="color:crimson;"> {{ summary?.expense | currency:"USD"}}</span></p>
-      </div>
-      <div class="col border">
-        <p><strong>Balance:</strong><span style="color:mediumpurple;"> {{ summary?.balance | currency:"USD"}}</span></p>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="row g-3">
-  <!-- Line Chart (3/4) -->
-  <div class="col-lg-9 col-md-9 col-sm-12">
-    <div class="card shadow-sm">
-      <div class="card-body">
-        <app-line-chart></app-line-chart>
-      </div>
+<div class="dashboard-container">
+  
+  <!-- Page Header -->
+  <div class="row mb-4">
+    <div class="col">
+      <h2 class="mb-1">
+        <i class="bi bi-speedometer2 me-2"></i>
+        Dashboard
+      </h2>
+      <p class="text-muted mb-0">
+        <i class="bi bi-calendar3 me-1"></i>
+        {{ today | date:'MMMM yyyy' }}
+      </p>
     </div>
   </div>
 
-  <!-- Pie Chart (1/4) -->
-  <div class="col-md-3 col-12">
-    <div class="card shadow-sm">
-      <div class="card-body">
-        <h5 class="card-title">Income vs Expense</h5>
-        <app-pie-chart></app-pie-chart>
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <p class="text-muted mt-3">Loading dashboard...</p>
+  </div>
+
+  <!-- Dashboard Content -->
+  <div *ngIf="!isLoading">
+    
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4">
+      <!-- Income Card -->
+      <div class="col-lg-3 col-md-6 col-sm-6">
+        <div class="card stat-card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div class="stat-icon bg-success bg-opacity-10 text-success">
+                <i class="bi bi-arrow-down-circle-fill"></i>
+              </div>
+              <span class="badge bg-success bg-opacity-10 text-success">
+                <i class="bi bi-arrow-up"></i> Income
+              </span>
+            </div>
+            <h3 class="mb-1 fw-bold text-success">
+              {{ summary?.income | currency:'USD':'symbol':'1.0-0' }}
+            </h3>
+            <p class="text-muted small mb-0">Total Income</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Expenses Card -->
+      <div class="col-lg-3 col-md-6 col-sm-6">
+        <div class="card stat-card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div class="stat-icon bg-danger bg-opacity-10 text-danger">
+                <i class="bi bi-arrow-up-circle-fill"></i>
+              </div>
+              <span class="badge bg-danger bg-opacity-10 text-danger">
+                <i class="bi bi-arrow-down"></i> Expenses
+              </span>
+            </div>
+            <h3 class="mb-1 fw-bold text-danger">
+              {{ summary?.expense | currency:'USD':'symbol':'1.0-0' }}
+            </h3>
+            <p class="text-muted small mb-0">Total Expenses</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Balance Card -->
+      <div class="col-lg-3 col-md-6 col-sm-6">
+        <div class="card stat-card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                <i class="bi bi-wallet2"></i>
+              </div>
+              <span class="badge" 
+                    [class.bg-success]="(summary?.balance ?? 0) >= 0"
+                    [class.bg-danger]="(summary?.balance ?? 0) < 0"
+                    class="bg-opacity-10">
+                Net
+              </span>
+            </div>
+            <h3 class="mb-1 fw-bold" [ngClass]="getBalanceClass()">
+              {{ summary?.balance | currency:'USD':'symbol':'1.0-0' }}
+            </h3>
+            <p class="text-muted small mb-0">Net Savings</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Savings Rate Card -->
+      <div class="col-lg-3 col-md-6 col-sm-6">
+        <div class="card stat-card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div class="stat-icon bg-info bg-opacity-10 text-info">
+                <i class="bi bi-percent"></i>
+              </div>
+              <span class="badge bg-info bg-opacity-10 text-info">
+                Rate
+              </span>
+            </div>
+            <h3 class="mb-1 fw-bold" [ngClass]="getSavingsRateClass()">
+              {{ savingsRate | number:'1.0-1' }}%
+            </h3>
+            <p class="text-muted small mb-0">Savings Rate</p>
+          </div>
+        </div>
       </div>
     </div>
+
+    <!-- Charts Row -->
+    <div class="row g-3 mb-4">
+      <!-- Line Chart -->
+      <div class="col-lg-8 col-md-12">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0">
+              <i class="bi bi-graph-up me-2"></i>
+              Financial Trends
+            </h5>
+          </div>
+          <div class="card-body">
+            <app-line-chart></app-line-chart>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pie Chart -->
+      <div class="col-lg-4 col-md-12">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0">
+              <i class="bi bi-pie-chart me-2"></i>
+              Distribution
+            </h5>
+          </div>
+          <div class="card-body">
+            <app-pie-chart></app-pie-chart>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Row: Quick Stats & Recent Transactions -->
+    <div class="row g-3">
+      
+      <!-- Quick Stats -->
+      <div class="col-lg-4 col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0">
+              <i class="bi bi-lightning-fill me-2"></i>
+              Quick Stats
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="quick-stat-item mb-3">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <i class="bi bi-receipt text-primary me-2"></i>
+                  <span class="text-muted">Total Transactions</span>
+                </div>
+                <strong class="fs-5">{{ transactionCount }}</strong>
+              </div>
+            </div>
+
+            <div class="quick-stat-item mb-3" *ngIf="topCategory">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <i class="bi bi-tag text-warning me-2"></i>
+                  <span class="text-muted">Top Category</span>
+                </div>
+                <div class="text-end">
+                  <div class="fw-bold">{{ topCategory.name }}</div>
+                  <small class="text-danger">
+                    {{ topCategory.amount | currency }}
+                  </small>
+                </div>
+              </div>
+            </div>
+
+            <div class="quick-stat-item">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <i class="bi bi-calendar-check text-success me-2"></i>
+                  <span class="text-muted">Current Month</span>
+                </div>
+                <strong>{{ today | date:'MMM yyyy' }}</strong>
+              </div>
+            </div>
+
+            <!-- Progress Bar for Savings Goal (Optional) -->
+            <div class="mt-4" *ngIf="savingsRate > 0">
+              <div class="d-flex justify-content-between mb-1">
+                <small class="text-muted">Savings Goal (20%)</small>
+                <small class="fw-bold" [ngClass]="getSavingsRateClass()">
+                  {{ savingsRate | number:'1.0-1' }}%
+                </small>
+              </div>
+              <div class="progress" style="height: 8px;">
+                <div class="progress-bar" 
+                     [class.bg-success]="savingsRate >= 20"
+                     [class.bg-warning]="savingsRate >= 10 && savingsRate < 20"
+                     [class.bg-danger]="savingsRate < 10"
+                     role="progressbar" 
+                     [style.width.%]="Math.min(savingsRate, 100)"
+                     [attr.aria-valuenow]="savingsRate"
+                     aria-valuemin="0" 
+                     aria-valuemax="100">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Transactions -->
+      <div class="col-lg-8 col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+              <i class="bi bi-clock-history me-2"></i>
+              Recent Transactions
+            </h5>
+            <a routerLink="/transactions" class="btn btn-sm btn-outline-primary">
+              View All
+              <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+          </div>
+          <div class="card-body p-0">
+            <div class="list-group list-group-flush">
+              <div *ngFor="let tx of recentTransactions" 
+                   class="list-group-item border-start-0 border-end-0">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div class="d-flex align-items-center flex-grow-1">
+                    <div class="transaction-icon me-3"
+                         [class.bg-success]="tx.type === 'INCOME'"
+                         [class.bg-danger]="tx.type === 'EXPENSE'">
+                      <i class="bi" 
+                         [class.bi-arrow-down-circle]="tx.type === 'INCOME'"
+                         [class.bi-arrow-up-circle]="tx.type === 'EXPENSE'"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                      <div class="fw-bold mb-1">{{ tx.description }}</div>
+                      <small class="text-muted">
+                        <i class="bi bi-tag me-1"></i>{{ tx.categoryName }}
+                        <span class="mx-2">•</span>
+                        <i class="bi bi-calendar3 me-1"></i>{{ tx.date | date:'short' }}
+                      </small>
+                    </div>
+                  </div>
+                  <div class="text-end ms-3">
+                    <div class="fw-bold fs-5"
+                         [class.text-success]="tx.type === 'INCOME'"
+                         [class.text-danger]="tx.type === 'EXPENSE'">
+                      {{ (tx.type === 'INCOME' ? '+' : '-') + (tx.amount | currency) }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div *ngIf="recentTransactions.length === 0" 
+                   class="list-group-item text-center text-muted py-5">
+                <i class="bi bi-inbox display-4 d-block mb-2 opacity-25"></i>
+                <p class="mb-0">No recent transactions</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>

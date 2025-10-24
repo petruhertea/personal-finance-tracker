@@ -1,3 +1,78 @@
-<div class="chart-container">
-    <canvas id="piechart"></canvas>
+<div class="chart-wrapper">
+  <!-- Chart Controls -->
+  <div class="chart-controls mb-3">
+    <div class="row g-2">
+      <div class="col-12">
+        <div class="btn-group w-100" role="group">
+          <button 
+            type="button" 
+            class="btn btn-sm"
+            [class.btn-primary]="selectedView === 'summary'"
+            [class.btn-outline-primary]="selectedView !== 'summary'"
+            (click)="selectedView = 'summary'; onViewChange()">
+            Summary
+          </button>
+          <button 
+            type="button" 
+            class="btn btn-sm"
+            [class.btn-primary]="selectedView === 'categories'"
+            [class.btn-outline-primary]="selectedView !== 'categories'"
+            (click)="selectedView = 'categories'; onViewChange()">
+            By Category
+          </button>
+        </div>
+      </div>
+      <div class="col-12" *ngIf="selectedView === 'categories'">
+        <select 
+          class="form-select form-select-sm" 
+          [(ngModel)]="selectedType" 
+          (change)="onTypeChange()">
+          <option value="EXPENSE">Expenses</option>
+          <option value="INCOME">Income</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart Container -->
+  <div class="chart-container" [class.loading]="isLoading">
+    <div *ngIf="isLoading" class="chart-loading">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+    <canvas #pieChartCanvas></canvas>
+  </div>
+
+  <!-- Summary Stats (only for summary view) -->
+  <div *ngIf="selectedView === 'summary' && summary && !isLoading" class="summary-stats mt-3">
+    <div class="row g-2 text-center">
+      <div class="col-6">
+        <div class="stat-card bg-success bg-opacity-10 p-2 rounded">
+          <small class="text-muted d-block">Income</small>
+          <strong class="text-success">{{ summary.income | currency }}</strong>
+        </div>
+      </div>
+      <div class="col-6">
+        <div class="stat-card bg-danger bg-opacity-10 p-2 rounded">
+          <small class="text-muted d-block">Expenses</small>
+          <strong class="text-danger">{{ summary.expense | currency }}</strong>
+        </div>
+      </div>
+    </div>
+    <div class="text-center mt-2">
+      <small class="text-muted">Net Savings:</small>
+      <strong [class.text-success]="summary.balance >= 0"
+              [class.text-danger]="summary.balance < 0">
+        {{ summary.balance | currency }}
+      </strong>
+    </div>
+  </div>
+
+  <!-- No Data Message -->
+  <div *ngIf="!isLoading && (!summary || (summary.income === 0 && summary.expense === 0))" 
+       class="text-center text-muted py-4">
+    <i class="bi bi-pie-chart display-4 d-block mb-2 opacity-25"></i>
+    <p>No data for this month</p>
+  </div>
 </div>

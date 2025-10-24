@@ -23,6 +23,7 @@ export class BudgetComponent implements OnInit {
 
   budgetForm!: FormGroup;
   editingBudget: BudgetView | null = null;
+  showForm = false; // Add this property to control modal visibility
 
   constructor(
     private budgetService: BudgetService,
@@ -47,9 +48,7 @@ export class BudgetComponent implements OnInit {
     this.categoryService.getCategories(userId).subscribe({
       next: data => {
         this.categories = data;
-        // Set default category in form după ce categoriile sunt încărcate
-        // console.log(this.categories);
-        if (this.categories.length > 0) {
+        if (this.categories.length > 0 && !this.editingBudget) {
           this.budgetForm.get('categoryId')?.setValue(this.categories[0].id);
         }
       },
@@ -57,11 +56,9 @@ export class BudgetComponent implements OnInit {
     });
   }
 
-
-
   private initForm() {
     this.budgetForm = this.fb.group({
-      amount: [0, [Validators.required, Validators.min(0)]],
+      amount: [0, [Validators.required, Validators.min(0.01)]],
       categoryId: [null, Validators.required],
       startDate: [new Date().toISOString().substring(0, 10), Validators.required],
       endDate: [new Date().toISOString().substring(0, 10), Validators.required]
@@ -77,10 +74,8 @@ export class BudgetComponent implements OnInit {
 
   editBudget(budget: BudgetView) {
     this.editingBudget = budget;
+    this.showForm = true; // Show the modal
 
-    console.log(this.editingBudget);
-
-    // dacă categoriile nu sunt încărcate, le încărcăm și apoi setăm form-ul
     if (this.categories.length === 0) {
       this.categoryService.getCategories(this.currentUser.id).subscribe({
         next: cats => {
@@ -103,14 +98,12 @@ export class BudgetComponent implements OnInit {
     });
   }
 
-
-
-
   cancelEdit() {
     this.editingBudget = null;
+    this.showForm = false; // Hide the modal
     this.budgetForm.reset({
       amount: 0,
-      categoryId: null,
+      categoryId: this.categories.length > 0 ? this.categories[0].id : null,
       startDate: new Date().toISOString().substring(0, 10),
       endDate: new Date().toISOString().substring(0, 10)
     });
@@ -122,9 +115,9 @@ export class BudgetComponent implements OnInit {
     const formValue = this.budgetForm.value;
 
     if (this.editingBudget) {
-      // update
+      // Update existing budget
       const budgetDto: BudgetDto = {
-        id: this.editingBudget.id, // trimitem doar aici
+        id: this.editingBudget.id,
         amount: formValue.amount,
         userId: this.currentUser.id,
         categoryId: formValue.categoryId,
@@ -141,7 +134,7 @@ export class BudgetComponent implements OnInit {
       });
 
     } else {
-      // add
+      // Create new budget
       const budgetDto: BudgetDto = {
         amount: formValue.amount,
         userId: this.currentUser.id,
@@ -153,15 +146,16 @@ export class BudgetComponent implements OnInit {
       this.budgetService.createBudget(budgetDto).subscribe({
         next: () => {
           this.loadBudgets();
-          this.budgetForm.reset();
+          this.cancelEdit();
         },
         error: err => console.error('Error creating budget', err)
       });
     }
   }
 
-
   deleteBudget(id: number) {
+    if (!confirm('Are you sure you want to delete this budget?')) return;
+    
     this.budgetService.deleteBudget(id).subscribe({
       next: () => this.loadBudgets(),
       error: err => console.error('Error deleting budget', err)

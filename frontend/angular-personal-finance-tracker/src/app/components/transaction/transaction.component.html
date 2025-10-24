@@ -2,16 +2,11 @@
 <div class="container-fluid">
 
   <!-- Error Message -->
-  <app-error-message
-    [message]="errorMessage"
-    (dismiss)="clearError()">
+  <app-error-message [message]="errorMessage" (dismiss)="clearError()">
   </app-error-message>
 
   <!-- Loading Overlay -->
-  <app-loading-spinner
-    *ngIf="isLoading"
-    [fullscreen]="true"
-    message="Loading transactions...">
+  <app-loading-spinner *ngIf="isLoading" [fullscreen]="true" message="Loading transactions...">
   </app-loading-spinner>
 
   <!-- Page Header -->
@@ -33,17 +28,11 @@
       <!-- Mobile Action Buttons -->
       <div class="d-md-none mb-3">
         <div class="btn-group w-100" role="group">
-          <button
-            class="btn"
-            [class.btn-primary]="showFilters"
-            [class.btn-outline-primary]="!showFilters"
+          <button class="btn" [class.btn-primary]="showFilters" [class.btn-outline-primary]="!showFilters"
             (click)="showFilters = !showFilters">
             <i class="bi bi-funnel"></i> Filters
           </button>
-          <button
-            class="btn"
-            [class.btn-success]="showForm"
-            [class.btn-outline-success]="!showForm"
+          <button class="btn" [class.btn-success]="showForm" [class.btn-outline-success]="!showForm"
             (click)="showForm = !showForm; editingTransaction = null">
             <i class="bi bi-plus-circle"></i> Add
           </button>
@@ -51,16 +40,10 @@
       </div>
 
       <!-- Filters Card -->
-      <div
-        class="card mb-3 shadow-sm"
-        [class.d-none]="!showFilters"
-        [class.d-md-block]="true">
+      <div class="card mb-3 shadow-sm" [class.d-none]="!showFilters" [class.d-md-block]="true">
         <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
           <span><i class="bi bi-funnel me-2"></i>Filters</span>
-          <button
-            class="btn btn-sm btn-link text-white d-md-none p-0"
-            (click)="showFilters = false"
-            type="button">
+          <button class="btn btn-sm btn-link text-white d-md-none p-0" (click)="showFilters = false" type="button">
             <i class="bi bi-x-lg"></i>
           </button>
         </div>
@@ -70,85 +53,64 @@
             <div class="mb-3">
               <label class="form-label small text-muted">Type</label>
               <select class="form-select" formControlName="type">
-                <option value="">All Types</option>
-                <option value="INCOME">Income</option>
-                <option value="EXPENSE">Expense</option>
+                <option [ngValue]="''">All Types</option>
+                <option [ngValue]="'INCOME'">Income</option>
+                <option [ngValue]="'EXPENSE'">Expense</option>
               </select>
+              
             </div>
 
             <div class="mb-3">
               <label class="form-label small text-muted">Category</label>
               <select class="form-select" formControlName="categoryId">
-                <option value="">All Categories</option>
-                <option *ngFor="let cat of categories" [value]="cat.id">
+                <option [ngValue]="''">All Categories</option>
+                <option *ngFor="let cat of categories" [ngValue]="cat.id">
                   {{ cat.name }}
                 </option>
               </select>
+              
             </div>
 
             <div class="mb-3">
               <label class="form-label small text-muted">From Date</label>
-              <input
-                type="datetime-local"
-                class="form-control"
-                formControlName="fromDate">
+              <input type="datetime-local" class="form-control" formControlName="fromDate">
             </div>
 
             <div class="mb-3">
               <label class="form-label small text-muted">To Date</label>
-              <input
-                type="datetime-local"
-                class="form-control"
-                formControlName="toDate">
+              <input type="datetime-local" class="form-control" formControlName="toDate">
             </div>
 
             <div class="row g-2 mb-3">
               <div class="col-6">
                 <label class="form-label small text-muted">Min Amount</label>
-                <input
-                  type="number"
-                  class="form-control"
-                  placeholder="0"
-                  formControlName="minAmount">
+                <input type="number" class="form-control" placeholder="0" formControlName="minAmount" step="0.01">
               </div>
               <div class="col-6">
                 <label class="form-label small text-muted">Max Amount</label>
-                <input
-                  type="number"
-                  class="form-control"
-                  placeholder="∞"
-                  formControlName="maxAmount">
+                <input type="number" class="form-control" placeholder="∞" formControlName="maxAmount" step="0.01">
               </div>
             </div>
 
-            <button
-              type="button"
-              class="btn btn-outline-secondary btn-sm w-100"
-              (click)="filterForm.reset()">
+            <button type="button" class="btn btn-outline-secondary btn-sm w-100" (click)="resetFilters()">
               <i class="bi bi-arrow-clockwise me-1"></i>Reset Filters
             </button>
+
+            
           </form>
         </div>
       </div>
 
       <!-- Transaction Form Card -->
-      <div
-        class="card shadow-sm"
-        [class.d-none]="!showForm"
-        [class.d-md-block]="true">
+      <div class="card shadow-sm" [class.d-none]="!showForm" [class.d-md-block]="true">
         <div class="card-header text-white d-flex justify-content-between align-items-center"
-             [class.bg-info]="!editingTransaction"
-             [class.bg-warning]="editingTransaction">
+          [class.bg-info]="!editingTransaction" [class.bg-warning]="editingTransaction">
           <span>
-            <i class="bi me-2"
-               [class.bi-plus-circle]="!editingTransaction"
-               [class.bi-pencil-square]="editingTransaction"></i>
+            <i class="bi me-2" [class.bi-plus-circle]="!editingTransaction"
+              [class.bi-pencil-square]="editingTransaction"></i>
             {{ editingTransaction ? 'Edit Transaction' : 'Add Transaction' }}
           </span>
-          <button
-            class="btn btn-sm btn-link text-white d-md-none p-0"
-            (click)="cancelEdit()"
-            type="button">
+          <button class="btn btn-sm btn-link text-white d-md-none p-0" (click)="cancelEdit()" type="button">
             <i class="bi bi-x-lg"></i>
           </button>
         </div>
@@ -159,12 +121,7 @@
               <label class="form-label">Amount *</label>
               <div class="input-group">
                 <span class="input-group-text">$</span>
-                <input
-                  type="number"
-                  class="form-control"
-                  formControlName="amount"
-                  placeholder="0.00"
-                  step="0.01"
+                <input type="number" class="form-control" formControlName="amount" placeholder="0.00" step="0.01"
                   required>
               </div>
             </div>
@@ -179,21 +136,13 @@
 
             <div class="mb-3">
               <label class="form-label">Description *</label>
-              <input
-                type="text"
-                class="form-control"
-                formControlName="description"
-                placeholder="What was this for?"
+              <input type="text" class="form-control" formControlName="description" placeholder="What was this for?"
                 required>
             </div>
 
             <div class="mb-3">
               <label class="form-label">Date & Time *</label>
-              <input
-                type="datetime-local"
-                class="form-control"
-                formControlName="date"
-                required>
+              <input type="datetime-local" class="form-control" formControlName="date" required>
             </div>
 
             <div class="mb-3">
@@ -207,17 +156,11 @@
             </div>
 
             <div class="d-grid gap-2">
-              <button
-                type="submit"
-                class="btn btn-success"
-                [disabled]="transactionForm.invalid || isLoading">
+              <button type="submit" class="btn btn-success" [disabled]="transactionForm.invalid || isLoading">
                 <i class="bi bi-check-circle me-2"></i>
                 {{ editingTransaction ? 'Update' : 'Add' }} Transaction
               </button>
-              <button
-                type="button"
-                class="btn btn-outline-secondary"
-                (click)="cancelEdit()"
+              <button type="button" class="btn btn-outline-secondary" (click)="cancelEdit()"
                 *ngIf="editingTransaction || showForm">
                 <i class="bi bi-x-circle me-2"></i>Cancel
               </button>
@@ -254,23 +197,18 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let tx of transactions"
-                    [class.table-success]="tx.type==='INCOME'"
-                    [class.table-danger]="tx.type==='EXPENSE'">
+                <tr *ngFor="let tx of transactions" [class.table-success]="tx.type==='INCOME'"
+                  [class.table-danger]="tx.type==='EXPENSE'">
                   <td>
                     <small>{{ tx.date | date:'short' }}</small>
                   </td>
                   <td>
-                    <span class="badge"
-                          [class.bg-success]="tx.type==='INCOME'"
-                          [class.bg-danger]="tx.type==='EXPENSE'">
+                    <span class="badge" [class.bg-success]="tx.type==='INCOME'" [class.bg-danger]="tx.type==='EXPENSE'">
                       {{ tx.type }}
                     </span>
                   </td>
                   <td class="text-end">
-                    <strong
-                      [class.text-success]="tx.type==='INCOME'"
-                      [class.text-danger]="tx.type==='EXPENSE'">
+                    <strong [class.text-success]="tx.type==='INCOME'" [class.text-danger]="tx.type==='EXPENSE'">
                       {{ tx.amount | currency }}
                     </strong>
                   </td>
@@ -282,17 +220,10 @@
                   <td>{{ tx.description }}</td>
                   <td class="text-center">
                     <div class="btn-group btn-group-sm">
-                      <button
-                        class="btn btn-outline-primary"
-                        (click)="startEdit(tx)"
-                        title="Edit"
-                        type="button">
+                      <button class="btn btn-outline-primary" (click)="startEdit(tx)" title="Edit" type="button">
                         <i class="bi bi-pencil"></i>
                       </button>
-                      <button
-                        class="btn btn-outline-danger"
-                        (click)="deleteTransaction(tx.id!)"
-                        title="Delete"
+                      <button class="btn btn-outline-danger" (click)="deleteTransaction(tx.id!)" title="Delete"
                         type="button">
                         <i class="bi bi-trash"></i>
                       </button>
@@ -313,13 +244,9 @@
 
         <!-- Mobile Card View -->
         <div class="card-body d-md-none p-2">
-          <div *ngFor="let tx of transactions"
-               class="card mb-2 border-0 shadow-sm">
-            <div class="card-body p-3"
-                 [class.border-start]="true"
-                 [class.border-success]="tx.type==='INCOME'"
-                 [class.border-danger]="tx.type==='EXPENSE'"
-                 style="border-left-width: 4px !important;">
+          <div *ngFor="let tx of transactions" class="card mb-2 border-0 shadow-sm">
+            <div class="card-body p-3" [class.border-start]="true" [class.border-success]="tx.type==='INCOME'"
+              [class.border-danger]="tx.type==='EXPENSE'" style="border-left-width: 4px !important;">
 
               <!-- Header -->
               <div class="d-flex justify-content-between align-items-start mb-2">
@@ -329,9 +256,8 @@
                     <i class="bi bi-tag me-1"></i>{{ tx.categoryName }}
                   </small>
                 </div>
-                <span class="badge ms-2"
-                      [class.bg-success]="tx.type==='INCOME'"
-                      [class.bg-danger]="tx.type==='EXPENSE'">
+                <span class="badge ms-2" [class.bg-success]="tx.type==='INCOME'"
+                  [class.bg-danger]="tx.type==='EXPENSE'">
                   {{ tx.type }}
                 </span>
               </div>
@@ -339,9 +265,8 @@
               <!-- Amount & Date -->
               <div class="d-flex justify-content-between align-items-end">
                 <div>
-                  <div class="display-6 fw-bold mb-0"
-                       [class.text-success]="tx.type==='INCOME'"
-                       [class.text-danger]="tx.type==='EXPENSE'">
+                  <div class="display-6 fw-bold mb-0" [class.text-success]="tx.type==='INCOME'"
+                    [class.text-danger]="tx.type==='EXPENSE'">
                     {{ tx.amount | currency }}
                   </div>
                   <small class="text-muted">
@@ -352,16 +277,10 @@
 
                 <!-- Actions -->
                 <div class="btn-group-vertical">
-                  <button
-                    class="btn btn-sm btn-outline-primary"
-                    (click)="startEdit(tx)"
-                    type="button">
+                  <button class="btn btn-sm btn-outline-primary" (click)="startEdit(tx)" type="button">
                     <i class="bi bi-pencil"></i>
                   </button>
-                  <button
-                    class="btn btn-sm btn-outline-danger"
-                    (click)="deleteTransaction(tx.id!)"
-                    type="button">
+                  <button class="btn btn-sm btn-outline-danger" (click)="deleteTransaction(tx.id!)" type="button">
                     <i class="bi bi-trash"></i>
                   </button>
                 </div>
@@ -370,8 +289,7 @@
           </div>
 
           <!-- Empty State -->
-          <div *ngIf="transactions.length === 0 && !isLoading"
-               class="text-center text-muted py-5">
+          <div *ngIf="transactions.length === 0 && !isLoading" class="text-center text-muted py-5">
             <i class="bi bi-inbox display-1 d-block mb-3 opacity-25"></i>
             <p class="mb-1">No transactions found</p>
             <small>Tap the <strong>Add</strong> button above to create your first transaction!</small>
