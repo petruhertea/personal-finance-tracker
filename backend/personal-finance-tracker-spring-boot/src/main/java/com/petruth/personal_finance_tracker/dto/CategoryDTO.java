@@ -5,6 +5,10 @@ public class CategoryDTO {
     private String name;
     private Long userId;
 
+    public CategoryDTO(){
+
+    }
+
     public CategoryDTO(Long id, String name, Long userId) {
         this.id = id;
         this.name = name;

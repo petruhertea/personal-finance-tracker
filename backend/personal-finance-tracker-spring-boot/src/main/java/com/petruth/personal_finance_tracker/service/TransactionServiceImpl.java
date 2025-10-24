@@ -7,6 +7,9 @@ import com.petruth.personal_finance_tracker.entity.User;
 import com.petruth.personal_finance_tracker.repository.TransactionRepository;
 import com.petruth.personal_finance_tracker.specifications.TransactionSpecifications;
 import com.petruth.personal_finance_tracker.utils.TransactionMapper;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -16,6 +19,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@CacheConfig(cacheNames = "transactions")
 public class TransactionServiceImpl implements TransactionService{
 
     private final TransactionRepository transactionRepository;
@@ -41,6 +45,10 @@ public class TransactionServiceImpl implements TransactionService{
     }
 
     @Override
+    @Cacheable(
+            key = "'user:' + #userId + ':default'",
+            condition = "#type == null && #fromDate == null && #toDate == null && #categoryId == null && #minAmount == null && #maxAmount == null"
+    )
     public List<TransactionDTO> findByUserId(int userId, String type, String fromDate, String toDate,
                                              Long categoryId, Double minAmount, Double maxAmount) {
 
@@ -80,6 +88,7 @@ public class TransactionServiceImpl implements TransactionService{
 
     // We use TransactionDTO for cleaner requests and responses
     @Override
+    @CacheEvict(allEntries = true)
     public Transaction saveFromDTO(TransactionDTO transactionDTO) {
         User dbUser = userService.findById(transactionDTO.getUserId());
         Category dbCategory = categoryService.findById(transactionDTO.getCategoryId());
@@ -88,6 +97,7 @@ public class TransactionServiceImpl implements TransactionService{
     }
 
     @Override
+    @Cacheable(key = "'user:' + #id + ':type:' + #type.name()")
     public List<TransactionDTO> findByUserIdAndTypeOrderByDate(int id, Transaction.TransactionType type) {
         List<Transaction> dbTransactions = transactionRepository.findByUserIdAndTypeOrderByDate(id, type);
 
@@ -98,11 +108,13 @@ public class TransactionServiceImpl implements TransactionService{
 
 
     @Override
+    @CacheEvict(allEntries = true)
     public Transaction save(Transaction transaction) {
         return transactionRepository.save(transaction);
     }
 
     @Override
+    @CacheEvict(allEntries = true)
     public void deleteById(Long id) {
         transactionRepository.deleteById(id);
     }

@@ -8,12 +8,16 @@ import com.petruth.personal_finance_tracker.repository.BudgetRepository;
 import com.petruth.personal_finance_tracker.repository.CategoryRepository;
 import com.petruth.personal_finance_tracker.repository.UserRepository;
 import com.petruth.personal_finance_tracker.utils.BudgetMapper;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@CacheConfig(cacheNames = "budgets")
 public class BudgetServiceImpl implements BudgetService{
 
     private final BudgetRepository budgetRepository;
@@ -30,6 +34,7 @@ public class BudgetServiceImpl implements BudgetService{
     }
 
     @Override
+    @CacheEvict(allEntries = true)
     public BudgetDTO createBudget(BudgetDTO budgetDTO) {
         User user = userRepository.findById(budgetDTO.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -41,6 +46,7 @@ public class BudgetServiceImpl implements BudgetService{
     }
 
     @Override
+    @Cacheable(key = "#userId")
     public List<BudgetDTO> findByUserId(Long userId) {
         return budgetRepository.findByUserId(userId)
                 .stream().map(budgetMapper::toBudgetDTO)
@@ -48,12 +54,14 @@ public class BudgetServiceImpl implements BudgetService{
     }
 
     @Override
+    @Cacheable(key = "#id")
     public Budget findById(Long id) {
         return budgetRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Budget with id -> " + id +" not found"));
     }
 
     @Override
+    @CacheEvict(allEntries = true)
     public BudgetDTO updateBudget(Long id, BudgetDTO budgetDTO) {
         Budget existing = budgetRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Budget not found"));
@@ -66,6 +74,7 @@ public class BudgetServiceImpl implements BudgetService{
     }
 
     @Override
+    @CacheEvict(allEntries = true)
     public void deleteById(Long id) {
         budgetRepository.deleteById(id);
     }
