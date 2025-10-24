@@ -47,7 +47,9 @@ public class TransactionServiceImpl implements TransactionService{
     @Override
     @Cacheable(
             key = "'user:' + #userId + ':default'",
-            condition = "#type == null && #fromDate == null && #toDate == null && #categoryId == null && #minAmount == null && #maxAmount == null"
+            condition = "#type == null && #fromDate == null && #toDate == null && " +
+                    "#categoryId == null && #minAmount == null && #maxAmount == null",
+            unless = "#result == null || #result.isEmpty()"
     )
     public List<TransactionDTO> findByUserId(int userId, String type, String fromDate, String toDate,
                                              Long categoryId, Double minAmount, Double maxAmount) {
