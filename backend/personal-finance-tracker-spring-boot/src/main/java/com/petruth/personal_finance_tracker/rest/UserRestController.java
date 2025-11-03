@@ -1,9 +1,6 @@
 package com.petruth.personal_finance_tracker.rest;
 
-import com.petruth.personal_finance_tracker.dto.BudgetDTO;
-import com.petruth.personal_finance_tracker.dto.CategoryDTO;
-import com.petruth.personal_finance_tracker.dto.TransactionDTO;
-import com.petruth.personal_finance_tracker.dto.UserResponse;
+import com.petruth.personal_finance_tracker.dto.*;
 import com.petruth.personal_finance_tracker.entity.Transaction;
 import com.petruth.personal_finance_tracker.entity.User;
 import com.petruth.personal_finance_tracker.security.SecurityUtil;
@@ -11,6 +8,7 @@ import com.petruth.personal_finance_tracker.service.BudgetService;
 import com.petruth.personal_finance_tracker.service.CategoryService;
 import com.petruth.personal_finance_tracker.service.TransactionService;
 import com.petruth.personal_finance_tracker.service.UserService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

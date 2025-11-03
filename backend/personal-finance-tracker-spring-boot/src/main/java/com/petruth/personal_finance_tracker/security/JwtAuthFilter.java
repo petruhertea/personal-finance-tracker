@@ -5,6 +5,7 @@ import com.petruth.personal_finance_tracker.jwt.JwtUtil;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -35,25 +36,30 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return;
         }
 
-        final String authHeader = request.getHeader("Authorization");
+        // Read token from cookie instead of header
+        String token = null;
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("jwt_token".equals(cookie.getName())) {
+                    token = cookie.getValue();
+                    break;
+                }
+            }
+        }
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        if (token == null) {
             filterChain.doFilter(request, response);
             return;
         }
 
         try {
-            String token = authHeader.substring(7);
             Claims claims = jwtUtil.extractClaims(token);
             String username = claims.getSubject();
             Long userId = claims.get("userId", Long.class);
 
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                // Store userId in authentication for easy access
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(username, null, null);
-
-                // Store the full claims as details
                 authToken.setDetails(claims);
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }

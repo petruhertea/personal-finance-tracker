@@ -1,7 +1,10 @@
 package com.petruth.personal_finance_tracker.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,6 +25,17 @@ public class User {
     @Column(name = "password")
     private String password;
 
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @Column(name = "last_login")
+    private LocalDateTime lastLogin;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Transaction> transactions = new ArrayList<>();
 
@@ -29,14 +43,20 @@ public class User {
 
     }
 
-    public User(Long id, String username, String email, String password, List<Transaction> transactions) {
+    public User(Long id, String username, String email, String password,
+                LocalDateTime createdAt, LocalDateTime updatedAt,
+                LocalDateTime lastLogin, List<Transaction> transactions) {
         this.id = id;
         this.username = username;
         this.email = email;
         this.password = password;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+        this.lastLogin = lastLogin;
         this.transactions = transactions;
     }
 
+    // Getters and Setters
     public Long getId() {
         return id;
     }
@@ -69,6 +89,30 @@ public class User {
         this.password = password;
     }
 
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public LocalDateTime getLastLogin() {
+        return lastLogin;
+    }
+
+    public void setLastLogin(LocalDateTime lastLogin) {
+        this.lastLogin = lastLogin;
+    }
+
     public List<Transaction> getTransactions() {
         return transactions;
     }
@@ -83,9 +127,8 @@ public class User {
                 "id=" + id +
                 ", username='" + username + '\'' +
                 ", email='" + email + '\'' +
-                ", password='" + password + '\'' +
-                ", transactions=" + transactions +
+                ", createdAt=" + createdAt +
+                ", lastLogin=" + lastLogin +
                 '}';
     }
 }
-

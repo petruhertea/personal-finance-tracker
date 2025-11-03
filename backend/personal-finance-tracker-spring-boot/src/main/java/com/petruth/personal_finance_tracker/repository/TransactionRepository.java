@@ -11,4 +11,5 @@ import java.util.List;
 public interface TransactionRepository extends JpaRepository<Transaction, Long>, JpaSpecificationExecutor<Transaction> {
     List<Transaction> findByUserIdOrderByDateDesc(int id);
     List<Transaction> findByUserIdAndTypeOrderByDate(int id, Transaction.TransactionType type);
+    long countByUserId(Long userId);
 }

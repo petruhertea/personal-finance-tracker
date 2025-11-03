@@ -52,7 +52,10 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
                         .requestMatchers(
-                                "/api/auth/**",
+                                "/api/auth/login",
+                                "/api/auth/register",
+                                "/api/auth/refresh",
+                                "/api/auth/logout",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
@@ -62,9 +65,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/transactions/**").authenticated()
                         .requestMatchers("/api/budgets/**").authenticated()
                         .requestMatchers("/api/categories/**").authenticated()
-
-                        // Admin endpoints (for future use)
-                        // .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/profile/**").authenticated() // Add this line
 
                         // All other requests require authentication
                         .anyRequest().authenticated()

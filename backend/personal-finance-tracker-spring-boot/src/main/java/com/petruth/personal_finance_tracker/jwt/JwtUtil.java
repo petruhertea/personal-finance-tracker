@@ -1,3 +1,4 @@
+// JwtUtil.java - Updated with shorter access token validity
 package com.petruth.personal_finance_tracker.jwt;
 
 import io.jsonwebtoken.Claims;
@@ -16,14 +17,16 @@ import java.util.concurrent.TimeUnit;
 public class JwtUtil {
     @Value("${jwt.secret.key}")
     private String secret;
-    private static final long VALIDITY = TimeUnit.HOURS.toMillis(1);
+
+    // Access token: 15 minutes (short-lived)
+    private static final long ACCESS_TOKEN_VALIDITY = TimeUnit.MINUTES.toMillis(15);
 
     public String generateToken(String username, Long userId){
         return Jwts.builder()
                 .subject(username)
-                .claim("userId",userId)
+                .claim("userId", userId)
                 .issuedAt(Date.from(Instant.now()))
-                .expiration(Date.from(Instant.now().plusMillis(VALIDITY)))
+                .expiration(Date.from(Instant.now().plusMillis(ACCESS_TOKEN_VALIDITY)))
                 .signWith(generateKey())
                 .compact();
     }
@@ -41,8 +44,12 @@ public class JwtUtil {
         return (username.equals(extractedUsername) && !isTokenExpired(token));
     }
 
-    private boolean isTokenExpired(String token) {
-        return extractClaims(token).getExpiration().before(new Date());
+    public boolean isTokenExpired(String token) {
+        try {
+            return extractClaims(token).getExpiration().before(new Date());
+        } catch (Exception e) {
+            return true;
+        }
     }
 
     private SecretKey generateKey(){

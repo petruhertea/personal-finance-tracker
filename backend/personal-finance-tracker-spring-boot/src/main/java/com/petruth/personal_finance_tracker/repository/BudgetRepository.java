@@ -9,4 +9,5 @@ import java.util.List;
 @CrossOrigin("http://localhost:4200")
 public interface BudgetRepository extends JpaRepository<Budget, Long> {
     List<Budget> findByUserId(Long userId);
+    long countByUserId(Long userId);
 }
