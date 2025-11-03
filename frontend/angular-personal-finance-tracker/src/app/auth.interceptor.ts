@@ -1,33 +1,45 @@
-// auth.interceptor.ts
-import { HttpInterceptorFn } from '@angular/common/http';
+// auth.interceptor.ts - With automatic token refresh
+import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { AuthService } from './services/auth.service';
 import { Router } from '@angular/router';
-import { catchError, throwError } from 'rxjs';
+import { catchError, throwError, switchMap } from 'rxjs';
+import { AuthService } from './services/auth.service';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const router = inject(Router);
-  const token = authService.getToken();
 
-  let authReq = req;
-
-  if (token) {
-    authReq = req.clone({
-      setHeaders: {
-        Authorization: `Bearer ${token}`
-      }
-    });
-  }
+  // Clone request with credentials
+  const authReq = req.clone({
+    withCredentials: true
+  });
 
   return next(authReq).pipe(
-    catchError((err) => {
-      if (err.status === 401 || err.status === 403) {
-        authService.logout();
+    catchError((error: HttpErrorResponse) => {
+      // If 401 and not already on auth endpoints
+      if (error.status === 401 && !req.url.includes('/auth/')) {
+        // Try to refresh token
+        return authService.refreshToken().pipe(
+          switchMap(() => {
+            // Retry original request after refresh
+            return next(req.clone({ withCredentials: true }));
+          }),
+          catchError((refreshError) => {
+            // Refresh failed, logout user
+            console.error('Token refresh failed:', refreshError);
+            authService.clearUserState();
+            router.navigate(['/login']);
+            return throwError(() => refreshError);
+          })
+        );
+      }
+
+      // For other errors, just pass through
+      if (error.status === 403) {
         router.navigate(['/login']);
       }
-      return throwError(() => err);
+
+      return throwError(() => error);
     })
   );
-
 };

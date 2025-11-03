@@ -1,7 +1,8 @@
-// src/app/auth/services/auth.service.ts
+// auth.service.ts - Fully refactored with refresh token support
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, switchMap, tap } from 'rxjs';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { BehaviorSubject, Observable, throwError, of, timer } from 'rxjs';
+import { tap, catchError, switchMap, shareReplay } from 'rxjs';
 import { User } from '../common/user';
 import { UserResponse } from '../common/user-response';
 import { environment } from '../../environments/environment';
@@ -10,62 +11,172 @@ import { environment } from '../../environments/environment';
   providedIn: 'root'
 })
 export class AuthService {
+  clearUserState() {
+    this.currentUserSubject.next(null);
+  }
 
   private authUrl = `${environment.apiUrl}/auth`;
   private userUrl = `${environment.apiUrl}/users`;
-  private tokenKey = 'jwt_token';
-  private currentUser: BehaviorSubject<UserResponse | null> = new BehaviorSubject<UserResponse | null>(null);
-  currentUser$: Observable<UserResponse | null> = this.currentUser.asObservable();
+  
+  private currentUserSubject = new BehaviorSubject<UserResponse | null>(null);
+  public currentUser$ = this.currentUserSubject.asObservable();
+  
+  private refreshTokenInProgress = false;
+  private refreshTokenSubject = new BehaviorSubject<boolean>(false);
 
   constructor(private http: HttpClient) { }
 
-  login(credentials: { username: string, password: string }) {
-    return this.http.post<{ token: string }>(`${this.authUrl}/login`, credentials).pipe(
-      tap(response => {
-        localStorage.setItem('jwt_token', response.token);
-      }),
-      switchMap(() => this.getUser()),
+  /**
+   * Auto-login: Check if user has valid session
+   */
+  autoLogin(): Observable<UserResponse | null> {
+    if (this.currentUserSubject.value) {
+      return of(this.currentUserSubject.value);
+    }
+
+    return this.http.get<UserResponse>(`${this.userUrl}/me`, { 
+      withCredentials: true 
+    }).pipe(
       tap(user => {
-        this.currentUser.next(user);
+        console.log('✅ Auto-login successful:', user.username);
+        this.currentUserSubject.next(user);
+      }),
+      catchError((error: HttpErrorResponse) => {
+        console.log('⚠️ Auto-login failed, clearing user state');
+        this.currentUserSubject.next(null);
+        return of(null);
       })
     );
   }
 
-  getUser() {
-    return this.http.get<UserResponse>(`${this.userUrl}/me`).pipe(
-      tap(user => this.currentUser.next(user))
+  /**
+   * Login with credentials
+   */
+  login(credentials: { username: string, password: string }): Observable<UserResponse> {
+    return this.http.post<UserResponse>(
+      `${this.authUrl}/login`, 
+      credentials,
+      { withCredentials: true }
+    ).pipe(
+      tap(user => {
+        console.log('✅ Login successful:', user.username);
+        this.currentUserSubject.next(user);
+      }),
+      catchError((error: HttpErrorResponse) => {
+        console.error('❌ Login failed:', error);
+        return throwError(() => error);
+      })
     );
   }
 
-  register(user: User): Observable<any> {
-    return this.http.post(`${this.authUrl}/register`, user, { responseType: 'text' });
+  /**
+   * Register new user
+   */
+  register(user: User): Observable<string> {
+    return this.http.post<string>(
+      `${this.authUrl}/register`, 
+      user, 
+      { responseType: 'text' as 'json' }
+    );
   }
 
-  logout(): void {
-    localStorage.removeItem(this.tokenKey);
-    this.currentUser.next(null);
-  }
-
-  getToken(): string | null {
-    return localStorage.getItem(this.tokenKey);
-  }
-
-  isTokenExpired(token: string): boolean {
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      const expiry = payload.exp * 1000;
-      return Date.now() > expiry;
-    } catch {
-      // token is expired
-      return true;
+  /**
+   * Refresh access token using refresh token
+   */
+  refreshToken(): Observable<boolean> {
+    // If already refreshing, wait for completion
+    if (this.refreshTokenInProgress) {
+      return this.refreshTokenSubject.asObservable().pipe(
+        switchMap(success => success ? of(true) : throwError(() => new Error('Refresh failed')))
+      );
     }
+
+    this.refreshTokenInProgress = true;
+    console.log('🔄 Refreshing access token...');
+
+    return this.http.post(
+      `${this.authUrl}/refresh`,
+      {},
+      { 
+        withCredentials: true,
+        responseType: 'text'
+      }
+    ).pipe(
+      tap(() => {
+        console.log('✅ Token refreshed successfully');
+        this.refreshTokenInProgress = false;
+        this.refreshTokenSubject.next(true);
+      }),
+      switchMap(() => of(true)),
+      catchError((error: HttpErrorResponse) => {
+        console.error('❌ Token refresh failed:', error);
+        this.refreshTokenInProgress = false;
+        this.refreshTokenSubject.next(false);
+        this.handleAuthError();
+        return throwError(() => error);
+      }),
+      shareReplay(1) // Share the result with multiple subscribers
+    );
   }
 
+  /**
+   * Get current user data
+   */
+  getUser(): Observable<UserResponse> {
+    return this.http.get<UserResponse>(`${this.userUrl}/me`, {
+      withCredentials: true
+    }).pipe(
+      tap(user => this.currentUserSubject.next(user)),
+      catchError((error: HttpErrorResponse) => {
+        console.error('Failed to get user:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Logout user
+   */
+  logout(): Observable<string> {
+    return this.http.post<string>(
+      `${this.authUrl}/logout`, 
+      {}, 
+      { 
+        withCredentials: true,
+        responseType: 'text' as 'json'
+      }
+    ).pipe(
+      tap(() => {
+        console.log('✅ Logout successful');
+        this.handleAuthError();
+      }),
+      catchError((error: HttpErrorResponse) => {
+        console.error('❌ Logout failed:', error);
+        // Clear state even if logout request fails
+        this.handleAuthError();
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Handle authentication errors (clear state)
+   */
+  private handleAuthError(): void {
+    this.currentUserSubject.next(null);
+  }
+
+  /**
+   * Check if user is authenticated
+   */
   isAuthenticated(): boolean {
-    const token = this.getToken();
-    return token != null && !this.isTokenExpired(token);
+    return this.currentUserSubject.value !== null;
   }
 
-
-
+  /**
+   * Get current user value (synchronous)
+   */
+  getCurrentUser(): UserResponse | null {
+    return this.currentUserSubject.value;
+  }
 }

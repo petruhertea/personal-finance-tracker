@@ -24,15 +24,15 @@ export class LoginComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+
+    if (this.authService.isAuthenticated()) {
+      this.router.navigate(['/dashboard']);
+    }
+
     this.loginForm = this.fb.group({
       username: ['', [Validators.required, Validators.minLength(3), MyCustomValidator.notOnlyWhitespace]],
       password: ['', [Validators.required, MyCustomValidator.notOnlyWhitespace]]
     });
-
-    // dacă e deja logat, redirecționează direct
-    if (this.authService.isAuthenticated()) {
-      this.router.navigate(['/dashboard']);
-    }
   }
 
   onSubmit(): void {
