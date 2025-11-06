@@ -13,4 +13,6 @@ public interface ImportedFileRepository extends JpaRepository<ImportedFile, Long
     List<ImportedFile> findByUserOrderByImportedAtDesc(User user);
     List<ImportedFile> findByUserAndImportStatus(User user, String status);
     List<ImportedFile> findByImportedAtBefore(LocalDateTime threshold);
+
+    void deleteByImportedAtBefore(LocalDateTime threshold);
 }

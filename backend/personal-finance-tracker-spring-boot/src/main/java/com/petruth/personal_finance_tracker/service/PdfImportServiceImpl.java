@@ -6,10 +6,12 @@ import com.petruth.personal_finance_tracker.entity.Transaction;
 import com.petruth.personal_finance_tracker.entity.User;
 import com.petruth.personal_finance_tracker.repository.ImportedFileRepository;
 import com.petruth.personal_finance_tracker.repository.TransactionRepository;
+import jakarta.transaction.Transactional;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -21,25 +23,68 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import java.util.HashMap;
+import java.util.Map;
+
+// mai sus în clasă (static)
+
 
 @Service
 public class PdfImportServiceImpl implements PdfImportService{
 
     private static final Logger logger = LoggerFactory.getLogger(PdfImportService.class);
+    private static final Map<String, Integer> ROMANIAN_MONTHS = new HashMap<>();
+
+    static {
+                // Abrevieri + forme complete (fără/ cu punct). Adaugă altele dacă apar diferit în PDF-uri.
+                ROMANIAN_MONTHS.put("ian", 1); ROMANIAN_MONTHS.put("ian.", 1); ROMANIAN_MONTHS.put("ianuarie", 1);
+                ROMANIAN_MONTHS.put("feb", 2); ROMANIAN_MONTHS.put("feb.", 2); ROMANIAN_MONTHS.put("februarie", 2);
+                ROMANIAN_MONTHS.put("mar", 3); ROMANIAN_MONTHS.put("mar.", 3); ROMANIAN_MONTHS.put("martie", 3);
+                ROMANIAN_MONTHS.put("apr", 4); ROMANIAN_MONTHS.put("apr.", 4); ROMANIAN_MONTHS.put("aprilie", 4);
+                ROMANIAN_MONTHS.put("mai", 5); ROMANIAN_MONTHS.put("mai.", 5);
+                ROMANIAN_MONTHS.put("iun", 6); ROMANIAN_MONTHS.put("iun.", 6); ROMANIAN_MONTHS.put("iunie", 6);
+                ROMANIAN_MONTHS.put("iul", 7); ROMANIAN_MONTHS.put("iul.", 7); ROMANIAN_MONTHS.put("iulie", 7);
+                ROMANIAN_MONTHS.put("aug", 8); ROMANIAN_MONTHS.put("aug.", 8); ROMANIAN_MONTHS.put("august", 8);
+                ROMANIAN_MONTHS.put("sep", 9); ROMANIAN_MONTHS.put("sep.", 9); ROMANIAN_MONTHS.put("septembrie", 9);
+                ROMANIAN_MONTHS.put("oct", 10); ROMANIAN_MONTHS.put("oct.", 10); ROMANIAN_MONTHS.put("octombrie", 10);
+                ROMANIAN_MONTHS.put("nov", 11); ROMANIAN_MONTHS.put("nov.", 11); ROMANIAN_MONTHS.put("noiembrie", 11);
+                ROMANIAN_MONTHS.put("dec", 12); ROMANIAN_MONTHS.put("dec.", 12); ROMANIAN_MONTHS.put("decembrie", 12);
+            }
 
     private final TransactionService transactionService;
     private final CategoryService categoryService;
     private final ImportedFileRepository importedFileRepository;
     private final TransactionRepository transactionRepository;
 
-    // Romanian date patterns
-    private static final DateTimeFormatter[] DATE_FORMATS = {
+    // Romanian date patterns (cover date-only, date+time and month names in Romanian)
+    private static final DateTimeFormatter[] DATE_FORMATS = new DateTimeFormatter[]{
+            // date-only (common separators)
+            DateTimeFormatter.ofPattern("d.MM.yyyy"),
+            DateTimeFormatter.ofPattern("dd.MM.yyyy"),
+            DateTimeFormatter.ofPattern("d/MM/yyyy"),
+            DateTimeFormatter.ofPattern("dd/MM/yyyy"),
+            DateTimeFormatter.ofPattern("d-MM-yyyy"),
+            DateTimeFormatter.ofPattern("dd-MM-yyyy"),
+            DateTimeFormatter.ofPattern("yyyy-MM-dd"),
+
+            // date + time (if PDF contains timestamps)
+            DateTimeFormatter.ofPattern("d.MM.yyyy HH:mm:ss"),
             DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss"),
+            DateTimeFormatter.ofPattern("d/MM/yyyy HH:mm:ss"),
             DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"),
+            DateTimeFormatter.ofPattern("d-MM-yyyy HH:mm:ss"),
             DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss"),
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
+
+            // month names in Romanian (e.g. "4 nov. 2025" or "4 nov 2025")
+            DateTimeFormatter.ofPattern("d MMM yyyy", new Locale("ro")),
+            DateTimeFormatter.ofPattern("dd MMM yyyy", new Locale("ro")),
+            DateTimeFormatter.ofPattern("d MMM. yyyy", new Locale("ro")),
+            DateTimeFormatter.ofPattern("dd MMM. yyyy", new Locale("ro"))
     };
 
     public PdfImportServiceImpl(TransactionService transactionService,
@@ -56,6 +101,7 @@ public class PdfImportServiceImpl implements PdfImportService{
      * Import transactions from PDF bank statement
      */
     @Override
+    @Transactional
     public ImportResult importFromPdf(MultipartFile file, User user, String bankType) throws Exception {
 
         // Create import batch record
@@ -117,6 +163,23 @@ public class PdfImportServiceImpl implements PdfImportService{
         return new ImportResult(imported.size(), errors, duplicates);
     }
 
+    // CRITICAL: Remove account numbers during import
+    private Transaction sanitizeTransaction(Transaction tx) {
+        String description = tx.getDescription();
+
+        // Remove IBAN patterns (RO##...)
+        description = description.replaceAll("\\bRO\\d{2}[A-Z]{4}\\d{16}\\b", "[IBAN]");
+
+        // Remove card numbers (****1234)
+        description = description.replaceAll("\\*{4}\\d{4}", "[CARD]");
+
+        // Remove reference numbers that might be sensitive
+        description = description.replaceAll("\\bREF:\\s*[A-Z0-9-]+\\b", "REF:[REDACTED]");
+
+        tx.setDescription(description);
+        return tx;
+    }
+
     /**
      * Extract text from PDF file
      */
@@ -144,6 +207,8 @@ public class PdfImportServiceImpl implements PdfImportService{
                 return parseRevolutStatement(text);
             case "RAIFFEISEN":
                 return parseRaiffeisenStatement(text);
+            case "CEC":
+                return parseCECStatement(text);
             case "AUTO":
                 return parseAutoDetect(text);
             default:
@@ -264,34 +329,188 @@ public class PdfImportServiceImpl implements PdfImportService{
     /**
      * Parse Revolut statement
      */
+    /**
+     * Parse Revolut statement (Enhanced for Romanian format)
+     */
     private List<ParsedTransaction> parseRevolutStatement(String text) {
         List<ParsedTransaction> transactions = new ArrayList<>();
+        if (text == null || text.isBlank()) return transactions;
 
-        // Revolut often has cleaner format
-        Pattern pattern = Pattern.compile(
-                "(\\d{2} [A-Za-z]{3} \\d{4})\\s+(.+?)\\s+([+-]?\\d+\\.\\d{2})"
-        );
+        // Split pe linii; fiecare linie conține de obicei: "4 nov. 2025  Descriere  €1.00  €..."
+        String[] lines = text.split("\\r?\\n");
+        Pattern dateStart = Pattern.compile("^(\\d{1,2}\\s+[\\p{L}]{3,}\\.?.*?\\d{4})\\s+(.*)$", Pattern.CASE_INSENSITIVE);
+
+        for (String raw : lines) {
+            String line = raw.trim();
+            if (line.isEmpty()) continue;
+
+            Matcher m = dateStart.matcher(line);
+            if (!m.find()) continue;
+
+            try {
+                String datePart = m.group(1).trim();
+                String rest = m.group(2).trim();
+
+                // Split rest from right to get last 1 or 2 amount-like tokens
+                String[] tokens = rest.split("\\s+");
+                // find tokens from end that look like amounts
+                List<String> amountTokens = new ArrayList<>();
+                int idx = tokens.length - 1;
+                while (idx >= 0 && amountTokens.size() < 2) {
+                    String t = tokens[idx].replaceAll("[^0-9,\\.\\-+€RONron]", "");
+                    if (t.matches(".*\\d.*")) {
+                        amountTokens.add(0, tokens[idx]); // keep original order
+                    } else {
+                        break;
+                    }
+                    idx--;
+                }
+
+                String description = String.join(" ", java.util.Arrays.copyOfRange(tokens, 0, Math.max(0, idx + 1))).trim();
+                if (description.isEmpty() && amountTokens.size() > 0) {
+                    // if description empty, try to recover by using whole rest minus amounts
+                    description = rest.replace(amountTokens.stream().reduce((a,b)->a+"\\s*"+b).orElse(""), "").trim();
+                }
+
+                BigDecimal debit = null;
+                BigDecimal credit = null;
+                if (amountTokens.size() == 2) {
+                    debit = parseRomanianAmount(amountTokens.get(0));
+                    credit = parseRomanianAmount(amountTokens.get(1));
+                } else if (amountTokens.size() == 1) {
+                    // single amount -> ambiguous, treat as debit unless description suggests inflow
+                    BigDecimal val = parseRomanianAmount(amountTokens.get(0));
+                    // heuristics
+                    if (description.toLowerCase().contains("alimentare") ||
+                            description.toLowerCase().contains("deposit") ||
+                            description.toLowerCase().contains("admiss") ||
+                            description.toLowerCase().contains("added") ||
+                            description.toLowerCase().contains("alimenta")) {
+                        credit = val;
+                    } else {
+                        debit = val;
+                    }
+                }
+
+                LocalDate date = parseDate(datePart);
+                if (debit != null && debit.compareTo(BigDecimal.ZERO) > 0) {
+                    transactions.add(new ParsedTransaction(date, debit, description, false));
+                }
+                if (credit != null && credit.compareTo(BigDecimal.ZERO) > 0) {
+                    transactions.add(new ParsedTransaction(date, credit, description, true));
+                }
+            } catch (Exception e) {
+                logger.warn("Failed to parse Revolut line: {} (err: {})", raw, e.getMessage());
+            }
+        }
+
+        // fallback: keep old simple parser if nothing parsed
+        if (transactions.isEmpty()) {
+            transactions = parseRevolutSimpleFormat(text);
+        }
+
+        return transactions;
+    }
+
+    private List<ParsedTransaction> parseRevolutSimpleFormat(String text) {
+        List<ParsedTransaction> transactions = new ArrayList<>();
+        Pattern pattern = Pattern.compile("(\\d{1,2}\\s+[\\p{L}]{3,}\\.??\\s+\\d{4})\\s+(.+?)\\s+([+-]?€?[\\d,\\.]+)\\s*(?:([+-]?€?[\\d,\\.]+))?", Pattern.CASE_INSENSITIVE);
 
         Matcher matcher = pattern.matcher(text);
         while (matcher.find()) {
             try {
                 String dateStr = matcher.group(1);
                 String description = matcher.group(2).trim();
-                String amountStr = matcher.group(3);
+                String amt1 = matcher.group(3);
+                String amt2 = matcher.group(4);
 
                 LocalDate date = parseDate(dateStr);
-                BigDecimal amount = new BigDecimal(amountStr).abs();
-                boolean isIncome = amountStr.startsWith("+");
+                BigDecimal amount = parseRomanianAmount(amt1);
+                boolean isIncome = amt1.startsWith("+") || (amt2 != null && amt2.startsWith("+"));
 
-                transactions.add(new ParsedTransaction(date, amount, description, isIncome));
+                // heuristics: if second amount exists and is larger -> decide which is credit/debit
+                if (amt2 != null && !amt2.isBlank()) {
+                    BigDecimal alt = parseRomanianAmount(amt2);
+                    // assume the larger is balance/other, keep both? We'll add the one that fits positive logic
+                    // For safety, add both as separate entries (common in revolut export last column reflects balance)
+                    transactions.add(new ParsedTransaction(date, amount.abs(), description, amt1.startsWith("+")));
+                    // don't add alt as transaction (often it's balance)
+                } else {
+                    transactions.add(new ParsedTransaction(date, amount.abs(), description, isIncome));
+                }
 
             } catch (Exception e) {
-                logger.warn("Failed to parse Revolut line: {}", matcher.group(0));
+                logger.warn("Failed to parse Revolut simple line: {}", matcher.group(0));
             }
         }
 
         return transactions;
     }
+
+    private List<ParsedTransaction> parseCECStatement(String text) {
+        List<ParsedTransaction> transactions = new ArrayList<>();
+        if (text == null || text.isBlank()) return transactions;
+
+        String[] lines = text.split("\\r?\\n");
+        Pattern dateStart = Pattern.compile("^(\\d{2}[\\-\\.]\\d{2}[\\-\\.]\\d{4})\\s+(.*)$");
+
+        for (String raw : lines) {
+            String line = raw.trim();
+            if (line.isEmpty()) continue;
+
+            Matcher m = dateStart.matcher(line);
+            if (!m.find()) continue;
+
+            try {
+                String datePart = m.group(1).trim();
+                String rest = m.group(2).trim();
+
+                // try to find last numeric token as amount
+                String[] tokens = rest.split("\\s+");
+                String possibleAmount = tokens[tokens.length - 1];
+                // sometimes reference or GL code is before amount, so search backwards for numeric
+                int i = tokens.length - 1;
+                String amountToken = null;
+                while (i >= 0) {
+                    if (tokens[i].matches(".*\\d.*")) {
+                        // candidate, clean punctuation
+                        String cleaned = tokens[i].replaceAll("[^0-9,\\.\\-+]", "");
+                        if (cleaned.matches(".*\\d.*")) {
+                            amountToken = tokens[i];
+                            break;
+                        }
+                    }
+                    i--;
+                }
+                if (amountToken == null) continue;
+
+                // description = everything between datePart and amountToken
+                String description = String.join(" ", java.util.Arrays.copyOfRange(tokens, 0, i)).trim();
+                if (description.isEmpty()) description = rest.replace(amountToken, "").trim();
+
+                LocalDate date = parseDate(datePart);
+                BigDecimal amount = parseRomanianAmount(amountToken);
+
+                // Heuristic: if description contains "Alimentare", "Depunere", "Intrari" => income
+                boolean isIncome = false;
+                String low = description.toLowerCase();
+                if (low.contains("alimentare") || low.contains("alimentare") || low.contains("depunere")
+                        || low.contains("intrare") || low.contains("credit") || low.contains("intrări")) {
+                    isIncome = true;
+                } else {
+                    // otherwise try to infer from context tokens around amount (e.g., a '-' before amount often means debit out)
+                    // but default to expense (many bank PDFs list expense rows)
+                    isIncome = false;
+                }
+
+                transactions.add(new ParsedTransaction(date, amount.abs(), description, isIncome));
+            } catch (Exception e) {
+                logger.warn("Failed to parse CEC line: {} (err: {})", raw, e.getMessage());
+            }
+        }
+        return transactions;
+    }
+
 
     /**
      * Parse Raiffeisen Bank statement
@@ -382,24 +601,81 @@ public class PdfImportServiceImpl implements PdfImportService{
      * Parse Romanian amount format (1.234,56 or 1234,56)
      */
     private BigDecimal parseRomanianAmount(String amount) {
-        // Remove dots (thousands separator) and replace comma with dot
-        String cleaned = amount.replace(".", "").replace(",", ".");
+        if (amount == null) throw new RuntimeException("Amount null");
+
+        // remove currency symbols and non-number chars except + - . ,
+        String cleaned = amount.replaceAll("[^0-9,\\.\\-+]", "");
+
+        // If both dot and comma present -> assume dot is thousands sep, comma decimal: "1.234,56"
+        if (cleaned.contains(".") && cleaned.contains(",")) {
+            cleaned = cleaned.replaceAll("\\.", ""); // remove thousands dots
+            cleaned = cleaned.replace(',', '.');    // comma -> dot decimal
+        } else {
+            // If only comma present -> decimal comma
+            if (cleaned.contains(",") && !cleaned.contains(".")) {
+                cleaned = cleaned.replace(',', '.');
+            }
+            // if only dot present -> keep as-is (dot as decimal)
+        }
+
+        // If string is like "+10" or "-50", still ok for BigDecimal
+        if (cleaned.isEmpty() || cleaned.equals("+") || cleaned.equals("-")) {
+            throw new RuntimeException("Invalid amount: " + amount);
+        }
+
         return new BigDecimal(cleaned);
     }
+
 
     /**
      * Parse date with multiple formats
      */
+    // Înlocuiește metoda parseDate cu asta:
     private LocalDate parseDate(String dateStr) {
-        for (DateTimeFormatter formatter : DATE_FORMATS) {
-            try {
-                return LocalDate.parse(dateStr, formatter);
-            } catch (Exception e) {
-                // Try next format
+        if (dateStr == null) throw new RuntimeException("Date string null");
+        String s = dateStr.trim().replaceAll("\\s+", " ");
+
+        // 1) CASE: "4 nov. 2025" sau "1 noiembrie 2025"
+        Matcher m = Pattern.compile("^(\\d{1,2})\\s+([\\p{L}\\.]+)\\s+(\\d{4})$", Pattern.CASE_INSENSITIVE).matcher(s);
+        if (m.matches()) {
+            String day = m.group(1);
+            String monthWord = m.group(2).toLowerCase(Locale.ROOT).replaceAll("\\.", "");
+            String year = m.group(3);
+
+            Integer monthNum = ROMANIAN_MONTHS.get(monthWord);
+            if (monthNum != null) {
+                String normalized = day + "." + (monthNum < 10 ? "0" + monthNum : monthNum) + "." + year;
+                try {
+                    return LocalDate.parse(normalized, DateTimeFormatter.ofPattern("d.MM.yyyy"));
+                } catch (Exception e) {
+                    // fallthrough to other parsers
+                }
             }
         }
-        throw new RuntimeException("Invalid date format: " + dateStr);
+
+        // 2) Dacă nu e un nume de lună, încearcă formatele numerice/time (folosește DATE_FORMATS definit deja)
+        for (DateTimeFormatter formatter : DATE_FORMATS) {
+            try {
+                return LocalDate.parse(s, formatter);
+            } catch (Exception e1) {
+                try {
+                    return LocalDateTime.parse(s, formatter).toLocalDate();
+                } catch (Exception e2) {
+                    // next formatter
+                }
+            }
+        }
+
+        // 3) Ultima încercare: normalizează separatori comuni și parse numeric simplu
+        String alt = s.replace("/", ".").replace("-", ".").replaceAll("\\s+", " ");
+        try {
+            return LocalDate.parse(alt, DateTimeFormatter.ofPattern("d.MM.yyyy"));
+        } catch (Exception e) {
+            throw new RuntimeException("Invalid date format: " + dateStr);
+        }
     }
+
+
 
     /**
      * Convert parsed transaction to Transaction entity
@@ -513,5 +789,13 @@ public class PdfImportServiceImpl implements PdfImportService{
             batch.setErrorLog(error);
         }
         importedFileRepository.save(batch);
+    }
+
+    // ✅ Auto-delete import records after 90 days
+    @Scheduled(cron = "0 0 2 * * *") // Daily at 2 AM
+    @Override
+    public void cleanupOldImports() {
+        LocalDateTime threshold = LocalDateTime.now().minusDays(90);
+        importedFileRepository.deleteByImportedAtBefore(threshold);
     }
 }
