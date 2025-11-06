@@ -1,6 +1,7 @@
 package com.petruth.personal_finance_tracker.repository;
 
 import com.petruth.personal_finance_tracker.entity.Transaction;
+import com.petruth.personal_finance_tracker.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -12,4 +13,6 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
     List<Transaction> findByUserIdOrderByDateDesc(int id);
     List<Transaction> findByUserIdAndTypeOrderByDate(int id, Transaction.TransactionType type);
     long countByUserId(Long userId);
+
+    boolean existsByAmountHashAndUser(String hash, User user);
 }

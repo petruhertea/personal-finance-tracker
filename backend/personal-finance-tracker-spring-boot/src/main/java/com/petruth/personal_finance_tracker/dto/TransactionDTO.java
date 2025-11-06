@@ -1,10 +1,11 @@
 package com.petruth.personal_finance_tracker.dto;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public class TransactionDTO {
     private Long id;
-    private Double amount;
+    private BigDecimal amount;
     private String type;
     private String description;
     private LocalDateTime date;
@@ -16,7 +17,7 @@ public class TransactionDTO {
 
     }
 
-    public TransactionDTO(Long id, Double amount, String type, String description,
+    public TransactionDTO(Long id, BigDecimal amount, String type, String description,
                           LocalDateTime date, Long userId, Long categoryId, String categoryName) {
         this.id = id;
         this.amount = amount;
@@ -36,11 +37,11 @@ public class TransactionDTO {
         this.id = id;
     }
 
-    public Double getAmount() {
+    public BigDecimal getAmount() {
         return amount;
     }
 
-    public void setAmount(Double amount) {
+    public void setAmount(BigDecimal amount) {
         this.amount = amount;
     }
 

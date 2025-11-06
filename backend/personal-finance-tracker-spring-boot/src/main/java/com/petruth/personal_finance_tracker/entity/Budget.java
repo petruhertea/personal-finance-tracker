@@ -1,10 +1,12 @@
 package com.petruth.personal_finance_tracker.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "budgets")
@@ -14,6 +16,8 @@ public class Budget {
     private Long id;
 
     private String name;
+
+    @Column(precision = 15, scale = 2)
     private BigDecimal amount;
 
     @ManyToOne
@@ -27,12 +31,29 @@ public class Budget {
     private LocalDate startDate;
     private LocalDate endDate;
 
-    public Budget(){
+    // New fields
+    @Column(name = "alert_threshold")
+    private Integer alertThreshold = 80;
 
+    @Column(name = "is_active")
+    private Boolean isActive = true;
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    public Budget() {
+        this.isActive = true;
+        this.alertThreshold = 80;
     }
 
     public Budget(Long id, String name, BigDecimal amount, User user, Category category,
                   LocalDate startDate, LocalDate endDate) {
+        this();
         this.id = id;
         this.name = name;
         this.amount = amount;
@@ -42,6 +63,7 @@ public class Budget {
         this.endDate = endDate;
     }
 
+    // Getters and Setters
     public Long getId() {
         return id;
     }
@@ -97,5 +119,36 @@ public class Budget {
     public void setEndDate(LocalDate endDate) {
         this.endDate = endDate;
     }
-}
 
+    public Integer getAlertThreshold() {
+        return alertThreshold;
+    }
+
+    public void setAlertThreshold(Integer alertThreshold) {
+        this.alertThreshold = alertThreshold;
+    }
+
+    public Boolean getIsActive() {
+        return isActive;
+    }
+
+    public void setIsActive(Boolean isActive) {
+        this.isActive = isActive;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+}
