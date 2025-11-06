@@ -7,10 +7,12 @@ import { RegisterComponent } from './components/register/register.component';
 import { ProfileComponent } from './components/profile/profile.component';
 import { TransactionComponent } from './components/transaction/transaction.component';
 import { BudgetComponent } from './components/budget/budget.component';
+import { CsvImportComponent } from './components/csv-import/csv-import.component';
 
 export const routes: Routes = [
+  { path: 'import', component: CsvImportComponent, canActivate: [AuthGuard] },
   { path: 'login', component: LoginComponent },
-  { path: 'register', component: RegisterComponent},
+  { path: 'register', component: RegisterComponent },
   { path: 'dashboard', component: DashboardComponent, canActivate: [AuthGuard] },
   { path: 'profile', component: ProfileComponent, canActivate: [AuthGuard] },
   { path: 'transactions', component: TransactionComponent, canActivate: [AuthGuard] },

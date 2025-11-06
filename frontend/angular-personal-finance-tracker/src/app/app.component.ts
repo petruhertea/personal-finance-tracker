@@ -27,7 +27,8 @@ export class AppComponent implements OnInit, OnDestroy {
     { path: '/dashboard', label: 'Home', icon: 'bi bi-house' },
     { path: '/transactions', label: 'Transactions', icon: 'bi bi-graph-up-arrow' },
     { path: '/budgets', label: 'Budgets', icon: 'bi bi-piggy-bank' },
-    { path: '/profile', label: 'Profile', icon: 'bi bi-person' }
+    { path: '/profile', label: 'Profile', icon: 'bi bi-person' },
+    { path: '/import', label: 'Import CSV', icon: 'bi bi-upload' }
   ];
 
   constructor(
