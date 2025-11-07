@@ -21,14 +21,9 @@ import java.security.MessageDigest;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import java.util.HashMap;
-import java.util.Map;
 
 // mai sus în clasă (static)
 
@@ -103,8 +98,6 @@ public class PdfImportServiceImpl implements PdfImportService{
     @Override
     @Transactional
     public ImportResult importFromPdf(MultipartFile file, User user, String bankType) throws Exception {
-
-        // Create import batch record
         ImportedFile importBatch = createImportBatch(file, user, bankType);
 
         List<Transaction> imported = new ArrayList<>();
@@ -112,17 +105,34 @@ public class PdfImportServiceImpl implements PdfImportService{
         int duplicates = 0;
 
         try {
+            logger.info("📄 Processing PDF: {} ({}KB) for user: {} with bankType: {}",
+                    file.getOriginalFilename(),
+                    file.getSize() / 1024,
+                    user.getUsername(),
+                    bankType);
+
             // Extract text from PDF
             String pdfText = extractTextFromPdf(file);
+            logger.info("📝 Extracted {} characters from PDF", pdfText.length());
 
             // Parse transactions based on bank type
-            List<ParsedTransaction> parsedTransactions =
-                    parsePdfByBankType(pdfText, bankType);
+            List<ParsedTransaction> parsedTransactions = parsePdfByBankType(pdfText, bankType);
+            logger.info("🔍 Found {} transactions in PDF", parsedTransactions.size());
+
+            // If no transactions found, try auto-detect
+            if (parsedTransactions.isEmpty() && !"AUTO".equalsIgnoreCase(bankType)) {
+                logger.warn("⚠️ No transactions found with {} parser, trying AUTO-DETECT...", bankType);
+                parsedTransactions = parseAutoDetect(pdfText);
+                logger.info("🔍 Auto-detect found {} transactions", parsedTransactions.size());
+            }
 
             // Convert to transactions
+            int processedCount = 0;
             for (ParsedTransaction parsed : parsedTransactions) {
+                processedCount++;
                 try {
                     Transaction transaction = convertToTransaction(parsed, user);
+                    transaction = sanitizeTransaction(transaction); // Add sanitization
 
                     // Check for duplicates
                     String hash = generateTransactionHash(transaction);
@@ -130,6 +140,7 @@ public class PdfImportServiceImpl implements PdfImportService{
 
                     if (isDuplicate(hash, user)) {
                         duplicates++;
+                        logger.debug("⏭️ Skipped duplicate: {} - {}", parsed.date, parsed.description);
                         continue;
                     }
 
@@ -140,9 +151,19 @@ public class PdfImportServiceImpl implements PdfImportService{
                     Transaction saved = transactionService.save(transaction);
                     imported.add(saved);
 
+                    logger.debug("✅ Imported: {} | {} | {} | {}",
+                            saved.getDate().toLocalDate(),
+                            saved.getType(),
+                            saved.getAmount(),
+                            saved.getDescription().substring(0, Math.min(30, saved.getDescription().length())));
+
                 } catch (Exception e) {
-                    errors.add("Transaction error: " + e.getMessage());
-                    logger.warn("Failed to process transaction: {}", e.getMessage());
+                    String errorMsg = String.format("Row %d: %s - %s",
+                            processedCount,
+                            e.getMessage(),
+                            parsed.description.substring(0, Math.min(50, parsed.description.length())));
+                    errors.add(errorMsg);
+                    logger.error("❌ Failed to process transaction {}: {}", processedCount, e.getMessage());
                 }
             }
 
@@ -150,15 +171,15 @@ public class PdfImportServiceImpl implements PdfImportService{
             updateImportBatch(importBatch, parsedTransactions.size(),
                     imported.size(), errors.size(), duplicates, null);
 
+            logger.info("✅ Import complete: {} imported, {} duplicates, {} errors",
+                    imported.size(), duplicates, errors.size());
+
         } catch (Exception e) {
-            logger.error("Failed to parse PDF", e);
+            logger.error("❌ PDF import failed for file: {}", file.getOriginalFilename(), e);
             updateImportBatch(importBatch, 0, 0, 0, 0,
                     "Failed to parse PDF: " + e.getMessage());
             throw new RuntimeException("Failed to parse PDF: " + e.getMessage());
         }
-
-        logger.info("✅ Imported {} transactions from PDF for user {}",
-                imported.size(), user.getId());
 
         return new ImportResult(imported.size(), errors, duplicates);
     }
@@ -447,68 +468,214 @@ public class PdfImportServiceImpl implements PdfImportService{
         return transactions;
     }
 
-    private List<ParsedTransaction> parseCECStatement(String text) {
+    /**
+     * Parse CEC Bank statement - Final version handling all quirks
+     */
+    @Override
+    public List<ParsedTransaction> parseCECStatement(String text) {
         List<ParsedTransaction> transactions = new ArrayList<>();
         if (text == null || text.isBlank()) return transactions;
 
+        logger.info("Parsing CEC Bank statement...");
+
         String[] lines = text.split("\\r?\\n");
-        Pattern dateStart = Pattern.compile("^(\\d{2}[\\-\\.]\\d{2}[\\-\\.]\\d{4})\\s+(.*)$");
+        List<String> buffer = new ArrayList<>();
+        boolean inTransactionSection = false;
 
-        for (String raw : lines) {
-            String line = raw.trim();
-            if (line.isEmpty()) continue;
+        for (String line : lines) {
+            String trimmed = line.trim();
 
-            Matcher m = dateStart.matcher(line);
-            if (!m.find()) continue;
+            // Skip empty lines
+            if (trimmed.isEmpty()) continue;
 
-            try {
-                String datePart = m.group(1).trim();
-                String rest = m.group(2).trim();
+            // Detect transaction section start
+            if (trimmed.contains("Detalii tranzacții") ||
+                    trimmed.contains("Data tranzacției")) {
+                inTransactionSection = true;
+                continue;
+            }
 
-                // try to find last numeric token as amount
-                String[] tokens = rest.split("\\s+");
-                String possibleAmount = tokens[tokens.length - 1];
-                // sometimes reference or GL code is before amount, so search backwards for numeric
-                int i = tokens.length - 1;
-                String amountToken = null;
-                while (i >= 0) {
-                    if (tokens[i].matches(".*\\d.*")) {
-                        // candidate, clean punctuation
-                        String cleaned = tokens[i].replaceAll("[^0-9,\\.\\-+]", "");
-                        if (cleaned.matches(".*\\d.*")) {
-                            amountToken = tokens[i];
-                            break;
-                        }
-                    }
-                    i--;
+            // CRITICAL: Detect end of transaction section (before footer)
+            if (trimmed.startsWith("Total intrări") ||
+                    trimmed.startsWith("Total ieșiri") ||
+                    trimmed.startsWith("CEC BANK") ||
+                    trimmed.startsWith("Fax:") ||
+                    trimmed.startsWith("Gestionează-ți") ||
+                    trimmed.startsWith("Fii vigilent") ||
+                    trimmed.startsWith("Pagina")) {
+                // Process any remaining buffer before stopping
+                if (!buffer.isEmpty()) {
+                    ParsedTransaction tx = parseCECBuffer(buffer);
+                    if (tx != null) transactions.add(tx);
+                    buffer.clear();
                 }
-                if (amountToken == null) continue;
+                inTransactionSection = false;
+                break; // Stop processing
+            }
 
-                // description = everything between datePart and amountToken
-                String description = String.join(" ", java.util.Arrays.copyOfRange(tokens, 0, i)).trim();
-                if (description.isEmpty()) description = rest.replace(amountToken, "").trim();
+            if (!inTransactionSection) continue;
 
-                LocalDate date = parseDate(datePart);
-                BigDecimal amount = parseRomanianAmount(amountToken);
+            // Add line to buffer
+            buffer.add(trimmed);
 
-                // Heuristic: if description contains "Alimentare", "Depunere", "Intrari" => income
-                boolean isIncome = false;
-                String low = description.toLowerCase();
-                if (low.contains("alimentare") || low.contains("alimentare") || low.contains("depunere")
-                        || low.contains("intrare") || low.contains("credit") || low.contains("intrări")) {
-                    isIncome = true;
-                } else {
-                    // otherwise try to infer from context tokens around amount (e.g., a '-' before amount often means debit out)
-                    // but default to expense (many bank PDFs list expense rows)
-                    isIncome = false;
+            // Detect transaction end: Look for pattern "GL######## -  #.##" or just "- #.##"
+            // CEC combines reference and amount on same line
+            if (trimmed.matches(".*GL\\d{8,}\\s+[-+]\\s*\\d+[,\\.]\\d{2}.*")) {
+                // Complete transaction found
+                ParsedTransaction tx = parseCECBuffer(buffer);
+                if (tx != null) {
+                    transactions.add(tx);
+                    logger.debug("✓ CEC transaction: {} | {} | {}",
+                            tx.date, tx.amount, tx.description.substring(0, Math.min(40, tx.description.length())));
                 }
-
-                transactions.add(new ParsedTransaction(date, amount.abs(), description, isIncome));
-            } catch (Exception e) {
-                logger.warn("Failed to parse CEC line: {} (err: {})", raw, e.getMessage());
+                buffer.clear();
             }
         }
+
+        // Process remaining buffer
+        if (!buffer.isEmpty() && inTransactionSection) {
+            ParsedTransaction tx = parseCECBuffer(buffer);
+            if (tx != null) transactions.add(tx);
+        }
+
+        logger.info("CEC Parser extracted {} transactions", transactions.size());
         return transactions;
+    }
+
+    /**
+     * Parse CEC transaction buffer - handles combined reference+amount
+     */
+    private ParsedTransaction parseCECBuffer(List<String> buffer) {
+        if (buffer.size() < 3) {
+            logger.debug("CEC: Buffer too small ({}): {}", buffer.size(), buffer);
+            return null;
+        }
+
+        try {
+            LocalDate date = null;
+            StringBuilder descBuilder = new StringBuilder();
+            BigDecimal amount = null;
+            String amountSign = "";
+
+            int idx = 0;
+
+            // Line 1: Transaction date
+            if (buffer.get(idx).matches("\\d{2}-\\d{2}-\\d{4}")) {
+                date = parseDate(buffer.get(idx));
+                idx++;
+            } else {
+                logger.debug("CEC: No valid date at start");
+                return null;
+            }
+
+            // Line 2: Settlement date (skip)
+            if (idx < buffer.size() && buffer.get(idx).matches("\\d{2}-\\d{2}-\\d{4}")) {
+                idx++;
+            }
+
+            // Collect all description lines until we hit the GL reference + amount line
+            while (idx < buffer.size()) {
+                String line = buffer.get(idx);
+
+                // Check if this line contains GL reference + amount
+                // Pattern: "GL000017870368 -  0.03" or "GL000017870368  - 0.03"
+                Pattern refAmountPattern = Pattern.compile("(GL\\d{8,})\\s+([-+])\\s*(\\d+[,\\.]\\d{2})");
+                Matcher matcher = refAmountPattern.matcher(line);
+
+                if (matcher.find()) {
+                    // Found the reference + amount line
+                    amountSign = matcher.group(2);
+                    String amountStr = matcher.group(3);
+                    amount = parseRomanianAmount(amountStr);
+
+                    // Don't add this line to description
+                    break;
+                }
+
+                // Skip standalone numbers (column artifacts)
+                if (line.matches("^\\d+$")) {
+                    idx++;
+                    continue;
+                }
+
+                // Add to description
+                if (descBuilder.length() > 0) {
+                    descBuilder.append(" ");
+                }
+                descBuilder.append(line);
+                idx++;
+            }
+
+            String description = descBuilder.toString().trim();
+
+            // Validation
+            if (date == null || amount == null || description.isEmpty()) {
+                logger.debug("CEC: Incomplete - date={}, amount={}, desc={}",
+                        date, amount, description);
+                return null;
+            }
+
+            // Determine if income or expense
+            boolean isIncome = isCECIncome(description, amountSign);
+
+            logger.debug("CEC Parsed: {} | {} {} | {}",
+                    date,
+                    isIncome ? "+" : "-",
+                    amount,
+                    description.substring(0, Math.min(50, description.length())));
+
+            return new ParsedTransaction(date, amount.abs(), description, isIncome);
+
+        } catch (Exception e) {
+            logger.warn("CEC: Failed to parse buffer - {}", e.getMessage());
+            logger.debug("CEC: Buffer was: {}", buffer);
+            return null;
+        }
+    }
+
+    /**
+     * Determine if CEC transaction is income
+     */
+    private boolean isCECIncome(String description, String amountSign) {
+        String lower = description.toLowerCase();
+
+        // In CEC Bank statements:
+        // "-" prefix means EXPENSE (money out)
+        // "+" prefix means INCOME (money in)
+        // NO prefix usually means INCOME (interest, deposits, etc.)
+
+        // Romanian income keywords
+        if (lower.contains("dobanda") || lower.contains("dobândă")) {
+            // "Plata dobanda" = interest PAYMENT (could be either way)
+            // If it's "plata dobanda" with minus, it's interest you paid (expense)
+            // If it's "dobanda creditata" with no minus, it's interest received (income)
+            if (lower.contains("plata") && amountSign.equals("-")) {
+                return false; // You paid interest (expense)
+            }
+            return true; // You received interest (income)
+        }
+
+        if (lower.contains("alimentare") ||      // Top-up
+                lower.contains("depunere") ||        // Deposit
+                lower.contains("transfer primit") || // Received transfer
+                lower.contains("salariu") ||         // Salary
+                lower.contains("venit") ||           // Income
+                lower.contains("intrare")) {         // Incoming
+            return true;
+        }
+
+        // Expense keywords
+        if (lower.contains("retragere") ||       // Withdrawal
+                lower.contains("cumparare") ||       // Purchase
+                lower.contains("plata") ||           // Payment
+                lower.contains("comision") ||        // Fee
+                lower.contains("iesire")) {          // Outgoing
+            return false;
+        }
+
+        // Default: Use the sign from the PDF
+        // In CEC: "-" = expense, "+" or empty = income
+        return !amountSign.equals("-");
     }
 
 

@@ -35,6 +35,8 @@ public interface PdfImportService {
     void updateImportBatch(ImportedFile batch, int total, int success,
                            int failed, int duplicates, String error);
 
+    List<ParsedTransaction> parseCECStatement(String text);
+
     void cleanupOldImports();
 
     // Inner class for parsed transactions
