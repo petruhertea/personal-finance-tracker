@@ -12,5 +12,6 @@ public interface CategoryService {
     void deleteById(Long id);
     List<CategoryDTO> getAllCategoriesForUser(Long userId);
     List<CategoryDTO> findByUserIsNull();
+    Category findByName(String name);
 }
 
