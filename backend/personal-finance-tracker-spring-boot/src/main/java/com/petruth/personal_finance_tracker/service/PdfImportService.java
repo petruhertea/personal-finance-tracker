@@ -461,7 +461,7 @@ public class PdfImportService {
                 String datePart = m.group(1).trim();
                 String rest = m.group(2).trim();
 
-                // Split rest from right to get last 1 or 2 amount-like tokens
+                // Split controller from right to get last 1 or 2 amount-like tokens
                 String[] tokens = rest.split("\\s+");
                 // find tokens from end that look like amounts
                 List<String> amountTokens = new ArrayList<>();
@@ -478,7 +478,7 @@ public class PdfImportService {
 
                 String description = String.join(" ", java.util.Arrays.copyOfRange(tokens, 0, Math.max(0, idx + 1))).trim();
                 if (description.isEmpty() && amountTokens.size() > 0) {
-                    // if description empty, try to recover by using whole rest minus amounts
+                    // if description empty, try to recover by using whole controller minus amounts
                     description = rest.replace(amountTokens.stream().reduce((a, b) -> a + "\\s*" + b).orElse(""), "").trim();
                 }
 

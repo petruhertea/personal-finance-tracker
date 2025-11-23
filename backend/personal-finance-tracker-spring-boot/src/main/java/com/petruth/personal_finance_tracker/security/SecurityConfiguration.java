@@ -56,6 +56,8 @@ public class SecurityConfiguration {
                                 "/api/auth/register",
                                 "/api/auth/refresh",
                                 "/api/auth/logout",
+                                "/api/email/verify",
+                                "/api/email/resend",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()

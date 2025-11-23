@@ -1,4 +1,4 @@
-package com.petruth.personal_finance_tracker.rest;
+package com.petruth.personal_finance_tracker.controller;
 
 import com.petruth.personal_finance_tracker.entity.User;
 import com.petruth.personal_finance_tracker.security.SecurityUtil;
@@ -12,17 +12,17 @@ import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/import")
-public class CsvImportRestController {
+public class CsvImportController {
 
     private final CsvImportService csvImportService;
     private final SecurityUtil securityUtil;
     private final UserService userService;
     private final PdfImportService pdfImportService;
 
-    public CsvImportRestController(CsvImportService csvImportService,
-                                   SecurityUtil securityUtil,
-                                   UserService userService,
-                                   PdfImportService pdfImportService) {
+    public CsvImportController(CsvImportService csvImportService,
+                               SecurityUtil securityUtil,
+                               UserService userService,
+                               PdfImportService pdfImportService) {
         this.csvImportService = csvImportService;
         this.securityUtil = securityUtil;
         this.userService = userService;

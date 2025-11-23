@@ -1,4 +1,4 @@
-package com.petruth.personal_finance_tracker.rest;
+package com.petruth.personal_finance_tracker.controller;
 
 import com.petruth.personal_finance_tracker.dto.CategoryDTO;
 import com.petruth.personal_finance_tracker.entity.Category;
@@ -10,13 +10,13 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/categories")
-public class CategoryRestController {
+public class CategoryController {
 
     private final CategoryService categoryService;
     private final CategoryMapper categoryMapper;
 
-    public CategoryRestController(CategoryService categoryService,
-                                  CategoryMapper categoryMapper) {
+    public CategoryController(CategoryService categoryService,
+                              CategoryMapper categoryMapper) {
         this.categoryService = categoryService;
         this.categoryMapper = categoryMapper;
     }

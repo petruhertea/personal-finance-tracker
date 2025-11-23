@@ -1,16 +1,19 @@
-package com.petruth.personal_finance_tracker.rest;
+package com.petruth.personal_finance_tracker.controller;
 
 import com.petruth.personal_finance_tracker.dto.AuthRequest;
 import com.petruth.personal_finance_tracker.dto.UserResponse;
 import com.petruth.personal_finance_tracker.entity.RefreshToken;
 import com.petruth.personal_finance_tracker.entity.User;
 import com.petruth.personal_finance_tracker.jwt.JwtUtil;
+import com.petruth.personal_finance_tracker.service.EmailVerificationService;
 import com.petruth.personal_finance_tracker.service.ProfileService;
 import com.petruth.personal_finance_tracker.service.RefreshTokenService;
 import com.petruth.personal_finance_tracker.service.UserService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,41 +23,55 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
-public class AuthRestController {
+public class AuthController {
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final RefreshTokenService refreshTokenService;
-    private final ProfileService profileService; // Add this
+    private final ProfileService profileService;
+    private final EmailVerificationService emailVerificationService;
 
-    public AuthRestController(UserService userService,
-                              PasswordEncoder passwordEncoder,
-                              JwtUtil jwtUtil,
-                              RefreshTokenService refreshTokenService,
-                              ProfileService profileService) { // Add this
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
+
+    public AuthController(UserService userService,
+                          PasswordEncoder passwordEncoder,
+                          JwtUtil jwtUtil,
+                          RefreshTokenService refreshTokenService,
+                          ProfileService profileService,
+                          EmailVerificationService emailVerificationService) {
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
         this.refreshTokenService = refreshTokenService;
-        this.profileService = profileService; // Add this
+        this.profileService = profileService;
+        this.emailVerificationService = emailVerificationService;
     }
 
     @PostMapping("/register")
-    public String register(@RequestBody AuthRequest request) {
+    public ResponseEntity<String> register(@RequestBody AuthRequest request) {
         if (userService.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Username already exists");
+            return ResponseEntity.badRequest().body("Username already exists");
         }
         if (userService.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already exists");
+            return ResponseEntity.badRequest().body("Email already exists");
         }
 
         User user = new User();
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setEmailVerified(false); // ✅ Not verified yet
+
         userService.save(user);
 
-        return "User registered successfully!";
+        // ✅ Send verification email
+        try {
+            emailVerificationService.sendVerificationEmail(user);
+            return ResponseEntity.ok("User registered! Please check your email to verify your account.");
+        } catch (Exception e) {
+            logger.error("Failed to send verification email", e);
+            return ResponseEntity.ok("User registered! However, we couldn't send the verification email. Please contact support.");
+        }
     }
 
     @PostMapping("/login")
@@ -96,7 +113,8 @@ public class AuthRestController {
             UserResponse userResponse = new UserResponse(
                     user.getId(),
                     user.getUsername(),
-                    user.getEmail()
+                    user.getEmail(),
+                    user.getEmailVerified()
             );
 
             return ResponseEntity.ok(userResponse);

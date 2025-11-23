@@ -1,4 +1,4 @@
-package com.petruth.personal_finance_tracker.rest;
+package com.petruth.personal_finance_tracker.controller;
 
 import com.petruth.personal_finance_tracker.dto.*;
 import com.petruth.personal_finance_tracker.entity.Transaction;
@@ -8,14 +8,13 @@ import com.petruth.personal_finance_tracker.service.BudgetService;
 import com.petruth.personal_finance_tracker.service.CategoryService;
 import com.petruth.personal_finance_tracker.service.TransactionService;
 import com.petruth.personal_finance_tracker.service.UserService;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
-public class UserRestController {
+public class UserController {
 
     private final TransactionService transactionService;
     private final UserService userService;
@@ -23,11 +22,11 @@ public class UserRestController {
     private final BudgetService budgetService;
     private final SecurityUtil securityUtil;
 
-    public UserRestController(TransactionService transactionService,
-                              UserService userService,
-                              CategoryService categoryService,
-                              BudgetService budgetService,
-                              SecurityUtil securityUtil) {
+    public UserController(TransactionService transactionService,
+                          UserService userService,
+                          CategoryService categoryService,
+                          BudgetService budgetService,
+                          SecurityUtil securityUtil) {
         this.transactionService = transactionService;
         this.userService = userService;
         this.categoryService = categoryService;
@@ -84,7 +83,8 @@ public class UserRestController {
         return new UserResponse(
                 user.getId(),
                 user.getUsername(),
-                user.getEmail()
+                user.getEmail(),
+                user.getEmailVerified()
         );
     }
 }

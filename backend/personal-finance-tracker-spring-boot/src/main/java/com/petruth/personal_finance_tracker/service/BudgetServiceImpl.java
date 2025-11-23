@@ -46,7 +46,7 @@ public class BudgetServiceImpl implements BudgetService{
     }
 
     @Override
-    @Cacheable(key = "#userId")
+    @Cacheable(key = "'user-' + #userId + '-budgets'")
     public List<BudgetDTO> findByUserId(Long userId) {
         return budgetRepository.findByUserId(userId)
                 .stream().map(budgetMapper::toBudgetDTO)
@@ -54,7 +54,7 @@ public class BudgetServiceImpl implements BudgetService{
     }
 
     @Override
-    @Cacheable(key = "#id")
+    @Cacheable(key = "'budget-' + #id")
     public Budget findById(Long id) {
         return budgetRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Budget with id -> " + id +" not found"));

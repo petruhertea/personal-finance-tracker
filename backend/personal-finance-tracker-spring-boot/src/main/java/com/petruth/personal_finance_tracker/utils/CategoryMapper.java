@@ -12,13 +12,17 @@ public class CategoryMapper {
         return new CategoryDTO(
                 category.getId(),
                 category.getName(),
-                category.getUser() != null ? category.getUser().getId() : null
+                category.getUser() != null ? category.getUser().getId() : null,
+                category.getIcon(),
+                category.getColor()
         );
     }
 
     public Category toCategory(CategoryDTO categoryDTO, User user) {
         return new Category(
                 categoryDTO.getName(),
+                categoryDTO.getIcon(),
+                categoryDTO.getColor(),
                 user
         );
     }

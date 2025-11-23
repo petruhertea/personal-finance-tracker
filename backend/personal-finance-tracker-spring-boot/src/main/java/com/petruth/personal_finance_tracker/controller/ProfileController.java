@@ -1,4 +1,4 @@
-package com.petruth.personal_finance_tracker.rest;
+package com.petruth.personal_finance_tracker.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.petruth.personal_finance_tracker.dto.*;
@@ -13,17 +13,17 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/profile")
-public class ProfileRestController {
+public class ProfileController {
 
     private final ProfileService profileService;
     private final RefreshTokenService refreshTokenService;
     private final SecurityUtil securityUtil;
     private final ObjectMapper objectMapper;
 
-    public ProfileRestController(ProfileService profileService,
-                                 RefreshTokenService refreshTokenService,
-                                 SecurityUtil securityUtil,
-                                 ObjectMapper objectMapper) {
+    public ProfileController(ProfileService profileService,
+                             RefreshTokenService refreshTokenService,
+                             SecurityUtil securityUtil,
+                             ObjectMapper objectMapper) {
         this.profileService = profileService;
         this.refreshTokenService = refreshTokenService;
         this.securityUtil = securityUtil;

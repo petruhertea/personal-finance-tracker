@@ -67,7 +67,7 @@ public class ProfileServiceImpl implements ProfileService{
         user.setEmail(newEmail);
         User updated = userRepository.save(user);
 
-        return new UserResponse(updated.getId(), updated.getUsername(), updated.getEmail());
+        return new UserResponse(updated.getId(), updated.getUsername(), updated.getEmail(), updated.getEmailVerified());
     }
 
     /**
@@ -124,7 +124,7 @@ public class ProfileServiceImpl implements ProfileService{
         // Get user info
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        UserResponse userResponse = new UserResponse(user.getId(), user.getUsername(), user.getEmail());
+        UserResponse userResponse = new UserResponse(user.getId(), user.getUsername(), user.getEmail(), user.getEmailVerified());
 
         // Get all transactions
         var transactions = transactionService.findByUserId(userId.intValue(),

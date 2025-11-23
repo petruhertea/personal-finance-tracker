@@ -25,6 +25,16 @@ public class User {
     @Column(name = "password")
     private String password;
 
+    // ✅ Add these new fields
+    @Column(name = "email_verified")
+    private Boolean emailVerified = false;
+
+    @Column(name = "email_verification_token")
+    private String emailVerificationToken;
+
+    @Column(name = "email_verification_token_expiry")
+    private LocalDateTime emailVerificationTokenExpiry;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -43,13 +53,14 @@ public class User {
 
     }
 
-    public User(Long id, String username, String email, String password,
-                LocalDateTime createdAt, LocalDateTime updatedAt,
-                LocalDateTime lastLogin, List<Transaction> transactions) {
+    public User(Long id, String username, String email, String password, Boolean emailVerified, String emailVerificationToken, LocalDateTime emailVerificationTokenExpiry, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime lastLogin, List<Transaction> transactions) {
         this.id = id;
         this.username = username;
         this.email = email;
         this.password = password;
+        this.emailVerified = emailVerified;
+        this.emailVerificationToken = emailVerificationToken;
+        this.emailVerificationTokenExpiry = emailVerificationTokenExpiry;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.lastLogin = lastLogin;
@@ -121,6 +132,30 @@ public class User {
         this.transactions = transactions;
     }
 
+    public Boolean getEmailVerified() {
+        return emailVerified;
+    }
+
+    public void setEmailVerified(Boolean emailVerified) {
+        this.emailVerified = emailVerified;
+    }
+
+    public String getEmailVerificationToken() {
+        return emailVerificationToken;
+    }
+
+    public void setEmailVerificationToken(String emailVerificationToken) {
+        this.emailVerificationToken = emailVerificationToken;
+    }
+
+    public LocalDateTime getEmailVerificationTokenExpiry() {
+        return emailVerificationTokenExpiry;
+    }
+
+    public void setEmailVerificationTokenExpiry(LocalDateTime emailVerificationTokenExpiry) {
+        this.emailVerificationTokenExpiry = emailVerificationTokenExpiry;
+    }
+
     @Override
     public String toString() {
         return "User{" +
@@ -130,5 +165,11 @@ public class User {
                 ", createdAt=" + createdAt +
                 ", lastLogin=" + lastLogin +
                 '}';
+    }
+
+    public boolean isEmailVerificationTokenValid() {
+        return this.emailVerificationToken != null
+                && this.emailVerificationTokenExpiry != null
+                && this.emailVerificationTokenExpiry.isAfter(LocalDateTime.now());
     }
 }

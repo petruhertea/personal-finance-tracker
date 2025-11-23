@@ -1,4 +1,4 @@
-package com.petruth.personal_finance_tracker.rest;
+package com.petruth.personal_finance_tracker.controller;
 
 import com.petruth.personal_finance_tracker.dto.TransactionDTO;
 import com.petruth.personal_finance_tracker.entity.Transaction;
@@ -11,15 +11,15 @@ import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/transactions")
-public class TransactionRestController {
+public class TransactionController {
 
     private final TransactionService transactionService;
     private final TransactionMapper transactionMapper;
     private final SecurityUtil securityUtil;
 
-    public TransactionRestController(TransactionService transactionService,
-                                     TransactionMapper transactionMapper,
-                                     SecurityUtil securityUtil) {
+    public TransactionController(TransactionService transactionService,
+                                 TransactionMapper transactionMapper,
+                                 SecurityUtil securityUtil) {
         this.transactionService = transactionService;
         this.transactionMapper = transactionMapper;
         this.securityUtil = securityUtil;

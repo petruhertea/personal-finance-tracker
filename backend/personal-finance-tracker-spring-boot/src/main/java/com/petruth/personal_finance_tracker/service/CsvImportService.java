@@ -71,16 +71,15 @@ public class CsvImportService{
     /**
      * Import transactions from CSV file
      */
+    // CsvImportService.java
     public ImportResult importFromCsv(MultipartFile file, User user,
                                       CsvImportConfig config) throws Exception {
 
-        // Create import batch record
         ImportedFile importBatch = getImportedFile(file, user, config);
         importBatch = importedFileRepository.save(importBatch);
 
         List<Transaction> imported = new ArrayList<>();
         List<String> errors = new ArrayList<>();
-        int totalRows = 0;
         int duplicates = 0;
 
         try (BufferedReader reader = new BufferedReader(
@@ -98,6 +97,9 @@ public class CsvImportService{
                 try {
                     Transaction transaction = parseRecord(record, user, config);
                     if (transaction != null) {
+                        // ✅ Set import batch metadata
+                        transaction.setImportBatchId(importBatch.getId());
+
                         Transaction saved = transactionService.save(transaction);
                         imported.add(saved);
                     }
@@ -174,6 +176,10 @@ public class CsvImportService{
         transaction.setType(type);
         transaction.setDescription(description);
         transaction.setCategory(category);
+
+        // ✅ Set import metadata
+        transaction.setIsManual(false);        // This is NOT manual
+        transaction.setSource("csv_import");   // Mark as CSV import
 
         return transaction;
     }

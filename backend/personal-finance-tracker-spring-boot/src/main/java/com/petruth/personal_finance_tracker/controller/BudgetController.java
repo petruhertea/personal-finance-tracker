@@ -1,4 +1,4 @@
-package com.petruth.personal_finance_tracker.rest;
+package com.petruth.personal_finance_tracker.controller;
 
 import com.petruth.personal_finance_tracker.dto.BudgetDTO;
 import com.petruth.personal_finance_tracker.entity.Budget;
@@ -6,15 +6,13 @@ import com.petruth.personal_finance_tracker.security.SecurityUtil;
 import com.petruth.personal_finance_tracker.service.BudgetService;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/budgets")
-public class BudgetRestController {
+public class BudgetController {
     private final BudgetService budgetService;
     private final SecurityUtil securityUtil;
 
-    public BudgetRestController(BudgetService budgetService, SecurityUtil securityUtil) {
+    public BudgetController(BudgetService budgetService, SecurityUtil securityUtil) {
         this.budgetService = budgetService;
         this.securityUtil = securityUtil;
     }
