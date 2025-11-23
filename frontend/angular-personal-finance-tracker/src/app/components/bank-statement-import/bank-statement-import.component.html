@@ -1,0 +1,396 @@
+<div class="container-fluid">
+
+  <!-- Page Header -->
+  <div class="row mb-4">
+    <div class="col">
+      <h2>
+        <i class="bi bi-file-earmark-arrow-up me-2"></i>
+        Import Transactions
+      </h2>
+      <p class="text-muted">Upload CSV or PDF bank statements</p>
+    </div>
+  </div>
+
+  <div class="alert alert-info">
+    <h6><i class="bi bi-shield-check"></i> Privacy & Security</h6>
+    <small>
+      • Your files are processed immediately and NOT stored<br>
+      • Only transaction data is saved to your account<br>
+      • Files are deleted after processing<br>
+      • We never access your bank account
+    </small>
+  </div>
+
+  <!-- File Type Selector -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5 class="mb-0">Select Import Type</h5>
+    </div>
+    <div class="card-body">
+      <div class="btn-group w-100" role="group">
+        <button type="button" class="btn" [class.btn-primary]="importType === 'csv'"
+          [class.btn-outline-primary]="importType !== 'csv'" (click)="setImportType('csv')">
+          <i class="bi bi-file-earmark-spreadsheet me-2"></i>
+          CSV / Excel
+        </button>
+        <button type="button" class="btn" [class.btn-primary]="importType === 'pdf'"
+          [class.btn-outline-primary]="importType !== 'pdf'" (click)="setImportType('pdf')">
+          <i class="bi bi-file-earmark-pdf me-2"></i>
+          PDF Statement
+        </button>
+      </div>
+
+      <div class="alert alert-info mt-3">
+        <i class="bi bi-info-circle me-2"></i>
+        <strong *ngIf="importType === 'csv'">CSV Import:</strong>
+        <strong *ngIf="importType === 'pdf'">PDF Import:</strong>
+        <span *ngIf="importType === 'csv'">
+          Download your bank statement as CSV/Excel and upload it here.
+          Works with any bank!
+        </span>
+        <span *ngIf="importType === 'pdf'">
+          Upload your PDF bank statement directly.
+          We'll automatically extract transactions.
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- PDF UPLOAD SECTION -->
+  <div *ngIf="importType === 'pdf'" class="card mb-4">
+    <div class="card-header bg-danger text-white">
+      <h5 class="mb-0">
+        <i class="bi bi-file-earmark-pdf me-2"></i>
+        Upload PDF Statement
+      </h5>
+    </div>
+    <div class="card-body">
+
+      <!-- File Upload -->
+      <div class="mb-4">
+        <label class="form-label">Select PDF Bank Statement</label>
+        <input type="file" class="form-control" accept=".pdf" (change)="onPdfSelected($event)">
+        <small class="text-muted">
+          Supported: PDF bank statements from BCR, BRD, ING, Revolut, Raiffeisen
+        </small>
+      </div>
+
+      <!-- Bank Selection -->
+      <div *ngIf="selectedPdfFile" class="mb-4">
+        <label class="form-label">Select Your Bank (Optional)</label>
+        <select class="form-select" [(ngModel)]="selectedBank">
+          <option value="AUTO">Auto-detect</option>
+          <option value="BCR">BCR (Banca Comercială Română)</option>
+          <option value="BRD">BRD - Groupe Société Générale</option>
+          <option value="CEC">CEC Bank</option>
+          <option value="ING">ING Bank Romania</option>
+          <option value="REVOLUT">Revolut</option>
+          <option value="RAIFFEISEN">Raiffeisen Bank</option>
+          <option value="OTHER">Other Bank (Generic Parser)</option>
+        </select>
+        <small class="text-muted">
+          We'll try to auto-detect if not specified
+        </small>
+      </div>
+
+      <!-- Import Button -->
+      <div class="d-grid gap-2" *ngIf="selectedPdfFile">
+        <button class="btn btn-danger btn-lg" (click)="importPdf()" [disabled]="isImporting">
+          <span *ngIf="!isImporting">
+            <i class="bi bi-file-earmark-pdf me-2"></i>
+            Import from PDF
+          </span>
+          <span *ngIf="isImporting">
+            <span class="spinner-border spinner-border-sm me-2"></span>
+            Extracting transactions...
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CSV UPLOAD SECTION (your existing component) -->
+  <div *ngIf="importType === 'csv'" class="card mb-4">
+    <!-- Your existing CSV import form here -->
+    <div class="card-header bg-success text-white">
+      <h5 class="mb-0">
+        <i class="bi bi-file-earmark-spreadsheet me-2"></i>
+        Upload CSV File
+      </h5>
+    </div>
+    <div class="card-body">
+      <div class="mb-4">
+        <label class="form-label">Select CSV File</label>
+        <input type="file" class="form-control" accept=".csv" (change)="onCsvSelected($event)">
+      </div>
+
+      <div *ngIf="selectedCsvFile">
+        <h6>Column Mapping</h6>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Date Column</label>
+            <input type="text" class="form-control" [(ngModel)]="dateColumn">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Amount Column</label>
+            <input type="text" class="form-control" [(ngModel)]="amountColumn">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Description Column</label>
+            <input type="text" class="form-control" [(ngModel)]="descriptionColumn">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Type Column (Optional)</label>
+            <input type="text" class="form-control" [(ngModel)]="typeColumn">
+          </div>
+        </div>
+
+        <div class="d-grid gap-2 mt-4">
+          <button class="btn btn-success btn-lg" (click)="importCsv()" [disabled]="isImporting">
+            <span *ngIf="!isImporting">
+              <i class="bi bi-upload me-2"></i>
+              Import from CSV
+            </span>
+            <span *ngIf="isImporting">
+              <span class="spinner-border spinner-border-sm me-2"></span>
+              Importing...
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result Card -->
+  <div class="card border-success" *ngIf="importResult">
+    <div class="card-header bg-success text-white">
+      <h5 class="mb-0">
+        <i class="bi bi-check-circle me-2"></i>
+        Import Complete
+      </h5>
+    </div>
+    <div class="card-body">
+
+      <!-- Summary Stats -->
+      <div class="row text-center mb-4">
+        <div class="col-md-4">
+          <div class="card bg-success bg-opacity-10">
+            <div class="card-body">
+              <h3 class="text-success mb-0">{{ importResult.successCount }}</h3>
+              <small class="text-muted">Successfully Imported</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4" *ngIf="importResult.duplicateCount > 0">
+          <div class="card bg-warning bg-opacity-10">
+            <div class="card-body">
+              <h3 class="text-warning mb-0">{{ importResult.duplicateCount }}</h3>
+              <small class="text-muted">Duplicates Skipped</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4" *ngIf="importResult.errors.length > 0">
+          <div class="card bg-danger bg-opacity-10">
+            <div class="card-body">
+              <h3 class="text-danger mb-0">{{ importResult.errors.length }}</h3>
+              <small class="text-muted">Errors</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Review Reminder -->
+      <div class="alert alert-warning d-flex align-items-start">
+        <i class="bi bi-exclamation-circle fs-4 me-3"></i>
+        <div>
+          <strong>Please Review Your Transactions</strong>
+          <p class="mb-0 small mt-1">
+            Automatic categorization may not be 100% accurate. We recommend reviewing
+            and adjusting transaction types and categories as needed.
+          </p>
+        </div>
+      </div>
+
+      <!-- Errors (if any) -->
+      <div class="alert alert-danger" *ngIf="importResult.errors.length > 0">
+        <h6>
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          Items That Couldn't Be Imported:
+        </h6>
+        <ul class="mb-0 small">
+          <li *ngFor="let error of importResult.errors.slice(0, 5)">
+            {{ error }}
+          </li>
+          <li *ngIf="importResult.errors.length > 5">
+            <em>... and {{ importResult.errors.length - 5 }} more</em>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="d-grid gap-2">
+        <button class="btn btn-primary btn-lg" (click)="viewTransactions()">
+          <i class="bi bi-list-check me-2"></i>
+          Review & Edit Transactions
+        </button>
+        <button class="btn btn-outline-secondary" (click)="resetImport()">
+          <i class="bi bi-arrow-clockwise me-2"></i>
+          Import Another File
+        </button>
+      </div>
+
+      <!-- Tips for Review -->
+      <div class="mt-3 p-3 bg-light rounded">
+        <small class="text-muted">
+          <strong>💡 Review Tips:</strong>
+          <ul class="mb-0 mt-1">
+            <li>Look for transactions marked as "Other" category - these likely need proper categorization</li>
+            <li>Verify salary/income entries are correctly marked as INCOME</li>
+            <li>Check that refunds and credits are properly categorized</li>
+            <li>ATM withdrawals are logged but you may want to recategorize based on actual usage</li>
+          </ul>
+        </small>
+      </div>
+    </div>
+  </div>
+
+  <!-- How to Get Bank Statements -->
+  <div class="card">
+    <div class="card-header">
+      <h5 class="mb-0">
+        <i class="bi bi-question-circle me-2"></i>
+        How to Download Bank Statements
+      </h5>
+    </div>
+    <div class="card-body">
+      <div class="accordion" id="bankInstructions">
+
+        <!-- BCR -->
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+              data-bs-target="#bcrInstructions">
+              <img src="assets/banks/bcr-logo.png" class="me-2" height="20" alt="BCR">
+              BCR (Banca Comercială Română)
+            </button>
+          </h2>
+          <div id="bcrInstructions" class="accordion-collapse collapse" data-bs-parent="#bankInstructions">
+            <div class="accordion-body">
+              <ol>
+                <li>Login to George Internet Banking</li>
+                <li>Go to "Conturi" → Select your account</li>
+                <li>Click "Extrase de cont"</li>
+                <li>Select date range → Download PDF or CSV</li>
+              </ol>
+              <p class="mb-0">
+                <strong>Best option:</strong> Download as PDF for automatic parsing
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- BRD -->
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+              data-bs-target="#brdInstructions">
+              BRD - Groupe Société Générale
+            </button>
+          </h2>
+          <div id="brdInstructions" class="accordion-collapse collapse" data-bs-parent="#bankInstructions">
+            <div class="accordion-body">
+              <ol>
+                <li>Login to BRD Net</li>
+                <li>Navigate to "Conturi" section</li>
+                <li>Click "Istoric tranzactii"</li>
+                <li>Select date range</li>
+                <li>Click "Export" → Choose PDF or Excel</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <!-- ING -->
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+              data-bs-target="#ingInstructions">
+              ING Bank Romania
+            </button>
+          </h2>
+          <div id="ingInstructions" class="accordion-collapse collapse" data-bs-parent="#bankInstructions">
+            <div class="accordion-body">
+              <ol>
+                <li>Login to Home'Bank</li>
+                <li>Go to "Tranzactii"</li>
+                <li>Click "Export" button</li>
+                <li>Choose CSV or PDF format</li>
+                <li>Select date range and download</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <!-- Revolut -->
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+              data-bs-target="#revolutInstructions">
+              Revolut
+            </button>
+          </h2>
+          <div id="revolutInstructions" class="accordion-collapse collapse" data-bs-parent="#bankInstructions">
+            <div class="accordion-body">
+              <ol>
+                <li>Open Revolut app</li>
+                <li>Go to "Statements"</li>
+                <li>Select account and date range</li>
+                <li>Tap "Generate statement"</li>
+                <li>Choose PDF or CSV → Email to yourself</li>
+              </ol>
+              <p class="mb-0">
+                <strong>Note:</strong> Revolut supports CSV export natively!
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Import Accuracy Disclaimer -->
+  <div class="card border-warning mt-4">
+    <div class="card-header bg-warning bg-opacity-10">
+      <h5 class="mb-0">
+        <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+        Important: Please Review Imported Transactions
+      </h5>
+    </div>
+    <div class="card-body">
+      <p class="mb-2">
+        Our automatic import system uses intelligent parsing to extract transactions from your bank statements.
+        However, please note:
+      </p>
+      <ul class="mb-3">
+        <li><strong>Transaction types</strong> (Income/Expense) are determined automatically but may occasionally need
+          correction</li>
+        <li><strong>Categories</strong> are assigned based on merchant names and keywords - please verify and adjust as
+          needed</li>
+        <li><strong>Complex statement formats</strong> may cause some transactions to be missed or misparsed</li>
+        <li><strong>Multi-line descriptions</strong> are simplified for clarity</li>
+      </ul>
+
+      <div class="alert alert-info mb-0">
+        <strong>Best Practice:</strong> After importing, review the transactions list and:
+        <ol class="mb-0 mt-2">
+          <li>Verify all expected transactions were imported</li>
+          <li>Correct any misidentified transaction types</li>
+          <li>Adjust categories to match your preferences</li>
+          <li>Edit descriptions if needed for clarity</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+</div>
