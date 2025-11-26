@@ -5,8 +5,10 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { AuthService } from '../../services/auth.service';
 import { ProfileService, AccountStats } from '../../services/profile.service';
 import { UserResponse } from '../../common/user-response';
-import { Subject, takeUntil } from 'rxjs';
+import { finalize, Subject, takeUntil } from 'rxjs';
 import { Router } from '@angular/router';
+import { environment } from '../../../environments/environment';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-profile',
@@ -16,21 +18,24 @@ import { Router } from '@angular/router';
 })
 export class ProfileComponent implements OnInit, OnDestroy {
   currentUser: UserResponse | null = null;
-  
+
   // Forms
   emailForm!: FormGroup;
   passwordForm!: FormGroup;
-  
+
+  // profile.component.ts - Add this to show email status
+  emailVerificationStatus: 'verified' | 'unverified' | 'pending' = 'unverified';
+
   // UI State
   activeSection: 'overview' | 'security' | 'preferences' | 'data' = 'overview';
   isEditingEmail = false;
   isEditingPassword = false;
   isLoading = false;
-  
+
   // Messages
   successMessage = '';
   errorMessage = '';
-  
+
   // Stats
   accountStats: AccountStats = {
     memberSince: new Date(),
@@ -38,20 +43,51 @@ export class ProfileComponent implements OnInit, OnDestroy {
     totalBudgets: 0,
     lastLogin: new Date()
   };
-  
+
   private destroy$ = new Subject<void>();
 
   constructor(
     private authService: AuthService,
     private profileService: ProfileService,
     private fb: FormBuilder,
-    private router: Router
-  ) {}
+    private router: Router,
+    private http: HttpClient
+  ) { }
 
   ngOnInit(): void {
     this.loadUserData();
-    this.initForms();
     this.loadAccountStats();
+
+    // ✅ Check email verification status
+    this.checkEmailVerificationStatus();
+  }
+
+  checkEmailVerificationStatus(): void {
+    if (this.currentUser?.email) {
+      // You'll need to add this field to UserResponse
+      this.emailVerificationStatus = this.currentUser.emailVerified ? 'verified' : 'unverified';
+    }
+  }
+
+  resendVerificationEmail(): void {
+    if (!this.currentUser?.email) return;
+
+    this.isLoading = true;
+    this.http.post(
+      `${environment.apiUrl}/email/resend`,
+      { email: this.currentUser.email },
+      { responseType: 'text', withCredentials: true }
+    ).pipe(
+      takeUntil(this.destroy$),
+      finalize(() => this.isLoading = false)
+    ).subscribe({
+      next: () => {
+        this.successMessage = 'Verification email sent! Please check your inbox.';
+      },
+      error: (err: any) => {
+        this.errorMessage = err.error || 'Failed to send verification email';
+      }
+    });
   }
 
   ngOnDestroy(): void {
@@ -171,7 +207,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
         this.successMessage = 'Password changed successfully! You will be logged out shortly.';
         this.isEditingPassword = false;
         this.passwordForm.reset();
-        
+
         // Auto logout after password change
         setTimeout(() => {
           this.authService.logout().subscribe(() => {
@@ -198,7 +234,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
       next: () => {
         this.isLoading = false;
         this.successMessage = 'Logged out from all devices successfully! Redirecting...';
-        
+
         setTimeout(() => {
           this.authService.logout().subscribe(() => {
             this.router.navigate(['/login']);
@@ -222,7 +258,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
       next: (blob) => {
         this.isLoading = false;
         this.successMessage = 'Data export complete! Downloading...';
-        
+
         // Create download link
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -262,7 +298,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
       next: () => {
         this.isLoading = false;
         this.successMessage = 'Account deleted successfully. Goodbye!';
-        
+
         setTimeout(() => {
           this.authService.logout().subscribe(() => {
             this.router.navigate(['/login']);

@@ -114,7 +114,7 @@ public class SecurityConfiguration {
                         )
 
                         // Permissions Policy (formerly Feature-Policy)
-                        .permissionsPolicy(permissions -> permissions
+                        .permissionsPolicyHeader(permissions -> permissions
                                 .policy("geolocation=(), microphone=(), camera=()")
                         )
                 )

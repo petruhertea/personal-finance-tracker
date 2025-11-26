@@ -26,35 +26,27 @@
   </div>
 
   <div class="row">
-    
+
     <!-- Sidebar Navigation -->
     <div class="col-md-3 mb-4">
       <div class="list-group">
-        <button 
-          class="list-group-item list-group-item-action d-flex align-items-center"
-          [class.active]="activeSection === 'overview'"
-          (click)="setActiveSection('overview')">
+        <button class="list-group-item list-group-item-action d-flex align-items-center"
+          [class.active]="activeSection === 'overview'" (click)="setActiveSection('overview')">
           <i class="bi bi-person me-2"></i>
           Overview
         </button>
-        <button 
-          class="list-group-item list-group-item-action d-flex align-items-center"
-          [class.active]="activeSection === 'security'"
-          (click)="setActiveSection('security')">
+        <button class="list-group-item list-group-item-action d-flex align-items-center"
+          [class.active]="activeSection === 'security'" (click)="setActiveSection('security')">
           <i class="bi bi-shield-lock me-2"></i>
           Security
         </button>
-        <button 
-          class="list-group-item list-group-item-action d-flex align-items-center"
-          [class.active]="activeSection === 'preferences'"
-          (click)="setActiveSection('preferences')">
+        <button class="list-group-item list-group-item-action d-flex align-items-center"
+          [class.active]="activeSection === 'preferences'" (click)="setActiveSection('preferences')">
           <i class="bi bi-sliders me-2"></i>
           Preferences
         </button>
-        <button 
-          class="list-group-item list-group-item-action d-flex align-items-center"
-          [class.active]="activeSection === 'data'"
-          (click)="setActiveSection('data')">
+        <button class="list-group-item list-group-item-action d-flex align-items-center"
+          [class.active]="activeSection === 'data'" (click)="setActiveSection('data')">
           <i class="bi bi-database me-2"></i>
           Data & Privacy
         </button>
@@ -66,7 +58,7 @@
 
       <!-- OVERVIEW SECTION -->
       <div *ngIf="activeSection === 'overview'">
-        
+
         <!-- User Info Card -->
         <div class="card shadow-sm mb-4">
           <div class="card-header bg-primary text-white">
@@ -80,8 +72,9 @@
               <div class="col-md-6 mb-3">
                 <label class="text-muted small">Username</label>
                 <div class="d-flex align-items-center">
-                  <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3"
-                       style="width: 50px; height: 50px; font-size: 1.5rem;">
+                  <div
+                    class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3"
+                    style="width: 50px; height: 50px; font-size: 1.5rem;">
                     {{ (currentUser?.username?.charAt(0) || '') | uppercase }}
                   </div>
                   <div>
@@ -98,6 +91,21 @@
                     <i class="bi bi-envelope"></i>
                   </span>
                   <input type="text" class="form-control" [value]="currentUser?.email" readonly>
+                  <!-- ✅ Add verification badge -->
+                  <span class="input-group-text">
+                    <span class="badge" [class.bg-success]="currentUser?.emailVerified"
+                      [class.bg-warning]="!currentUser?.emailVerified">
+                      <i class="bi" [class.bi-check-circle]="currentUser?.emailVerified"
+                        [class.bi-exclamation-circle]="!currentUser?.emailVerified"></i>
+                      {{ currentUser?.emailVerified ? 'Verified' : 'Not Verified' }}
+                    </span>
+                  </span>
+                </div>
+                <!-- ✅ Add resend verification button if not verified -->
+                <div class="mt-2" *ngIf="!currentUser?.emailVerified">
+                  <button class="btn btn-sm btn-outline-warning" (click)="resendVerificationEmail()">
+                    <i class="bi bi-envelope me-1"></i>Resend Verification Email
+                  </button>
                 </div>
               </div>
             </div>
@@ -149,7 +157,7 @@
 
       <!-- SECURITY SECTION -->
       <div *ngIf="activeSection === 'security'">
-        
+
         <!-- Email Update -->
         <div class="card shadow-sm mb-4">
           <div class="card-header d-flex justify-content-between align-items-center">
@@ -175,7 +183,8 @@
               </div>
               <div class="mb-3">
                 <label class="form-label">Confirm Password</label>
-                <input type="password" class="form-control" formControlName="password" placeholder="Enter your password">
+                <input type="password" class="form-control" formControlName="password"
+                  placeholder="Enter your password">
               </div>
               <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary" [disabled]="emailForm.invalid || isLoading">
@@ -221,7 +230,8 @@
               <div class="mb-3">
                 <label class="form-label">Confirm New Password</label>
                 <input type="password" class="form-control" formControlName="confirmPassword">
-                <div class="text-danger small" *ngIf="passwordForm.errors?.['mismatch'] && passwordForm.get('confirmPassword')?.touched">
+                <div class="text-danger small"
+                  *ngIf="passwordForm.errors?.['mismatch'] && passwordForm.get('confirmPassword')?.touched">
                   Passwords do not match
                 </div>
               </div>
@@ -284,7 +294,7 @@
 
       <!-- DATA & PRIVACY SECTION -->
       <div *ngIf="activeSection === 'data'">
-        
+
         <!-- Export Data -->
         <div class="card shadow-sm mb-4">
           <div class="card-header">
