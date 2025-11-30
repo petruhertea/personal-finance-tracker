@@ -1,13 +1,14 @@
+// budget.component.ts
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { BudgetDto } from '../../common/budget-dto';
-import { BudgetView } from '../../common/budget-view';
 import { BudgetService } from '../../services/budget.service';
 import { AuthService } from '../../services/auth.service';
 import { UserResponse } from '../../common/user-response';
 import { Category } from '../../common/category';
 import { CommonModule } from '@angular/common';
 import { CategoryService } from '../../services/category.service';
+import { BudgetWithSpending } from '../../common/budget-with-spending';
 
 @Component({
   selector: 'app-budget',
@@ -17,13 +18,13 @@ import { CategoryService } from '../../services/category.service';
 })
 export class BudgetComponent implements OnInit {
 
-  budgetList: BudgetView[] = [];
+  budgetList: BudgetWithSpending[] = [];
   categories: Category[] = [];
   currentUser!: UserResponse;
 
   budgetForm!: FormGroup;
-  editingBudget: BudgetView | null = null;
-  showForm = false; // Add this property to control modal visibility
+  editingBudget: BudgetWithSpending | null = null;
+  showForm = false;
 
   constructor(
     private budgetService: BudgetService,
@@ -39,7 +40,7 @@ export class BudgetComponent implements OnInit {
         this.currentUser = user;
         this.loadCategories(this.currentUser.id);
         this.initForm();
-        this.loadBudgets();
+        this.loadBudgetsWithSpending(this.currentUser.id);
       }
     });
   }
@@ -65,16 +66,57 @@ export class BudgetComponent implements OnInit {
     });
   }
 
-  private loadBudgets() {
-    this.budgetService.getBudgetsWithCategories(this.currentUser.id).subscribe({
-      next: budgets => this.budgetList = budgets,
-      error: err => console.error('Error loading budgets', err)
+  private loadBudgetsWithSpending(userId: number) {
+    this.budgetService.getBudgetsWithSpending(userId).subscribe({
+      next: budgets => {
+        this.budgetList = budgets;
+        this.showBudgetAlerts(budgets);
+        console.log("Budget List",this.budgetList);
+      },
+      error: err => console.error('Error loading budgets with spending', err)
     });
   }
 
-  editBudget(budget: BudgetView) {
+  // ✅ Show in-app alerts for budget warnings
+  private showBudgetAlerts(budgets: BudgetWithSpending[]) {
+    budgets.forEach(budget => {
+      if (budget.isOverBudget) {
+        console.warn(`🚨 Budget exceeded for ${budget.categoryName}: ${budget.percentage.toFixed(1)}%`);
+      } else if (budget.nearThreshold) {
+        console.warn(`⚠️ Budget warning for ${budget.categoryName}: ${budget.percentage.toFixed(1)}%`);
+      }
+    });
+  }
+
+  // ✅ Helper: Get progress bar color based on percentage
+  getProgressBarColor(budget: BudgetWithSpending): string {
+    if (budget.isOverBudget) return 'bg-danger';
+    if (budget.nearThreshold) return 'bg-warning';
+    return 'bg-success';
+  }
+
+  // ✅ Helper: Get progress bar percentage (capped at 100%)
+  getProgressWidth(budget: BudgetWithSpending): string {
+    return Math.min(budget.percentage, 100).toFixed(1) + '%';
+  }
+
+  // ✅ Helper: Get status badge
+  getBudgetStatus(budget: BudgetWithSpending): string {
+    if (budget.isOverBudget) return 'Over Budget';
+    if (budget.nearThreshold) return 'Warning';
+    return 'On Track';
+  }
+
+  // ✅ Helper: Get status badge class
+  getStatusBadgeClass(budget: BudgetWithSpending): string {
+    if (budget.isOverBudget) return 'bg-danger';
+    if (budget.nearThreshold) return 'bg-warning';
+    return 'bg-success';
+  }
+
+  editBudget(budget: BudgetWithSpending) {
     this.editingBudget = budget;
-    this.showForm = true; // Show the modal
+    this.showForm = true;
 
     if (this.categories.length === 0) {
       this.categoryService.getCategories(this.currentUser.id).subscribe({
@@ -89,9 +131,9 @@ export class BudgetComponent implements OnInit {
     }
   }
 
-  private setFormValues(budget: BudgetView) {
+  private setFormValues(budget: BudgetWithSpending) {
     this.budgetForm.setValue({
-      amount: budget.amount,
+      amount: budget.budgetAmount,
       categoryId: budget.categoryId,
       startDate: new Date(budget.startDate!).toISOString().substring(0, 10),
       endDate: new Date(budget.endDate!).toISOString().substring(0, 10)
@@ -100,7 +142,7 @@ export class BudgetComponent implements OnInit {
 
   cancelEdit() {
     this.editingBudget = null;
-    this.showForm = false; // Hide the modal
+    this.showForm = false;
     this.budgetForm.reset({
       amount: 0,
       categoryId: this.categories.length > 0 ? this.categories[0].id : null,
@@ -115,7 +157,6 @@ export class BudgetComponent implements OnInit {
     const formValue = this.budgetForm.value;
 
     if (this.editingBudget) {
-      // Update existing budget
       const budgetDto: BudgetDto = {
         id: this.editingBudget.id,
         amount: formValue.amount,
@@ -127,14 +168,12 @@ export class BudgetComponent implements OnInit {
 
       this.budgetService.updateBudget(budgetDto.id!, budgetDto).subscribe({
         next: () => {
-          this.loadBudgets();
+          this.loadBudgetsWithSpending(this.currentUser.id);
           this.cancelEdit();
         },
         error: err => console.error('Error updating budget', err)
       });
-
     } else {
-      // Create new budget
       const budgetDto: BudgetDto = {
         amount: formValue.amount,
         userId: this.currentUser.id,
@@ -145,7 +184,7 @@ export class BudgetComponent implements OnInit {
 
       this.budgetService.createBudget(budgetDto).subscribe({
         next: () => {
-          this.loadBudgets();
+          this.loadBudgetsWithSpending(this.currentUser.id);
           this.cancelEdit();
         },
         error: err => console.error('Error creating budget', err)
@@ -155,10 +194,14 @@ export class BudgetComponent implements OnInit {
 
   deleteBudget(id: number) {
     if (!confirm('Are you sure you want to delete this budget?')) return;
-    
+
     this.budgetService.deleteBudget(id).subscribe({
-      next: () => this.loadBudgets(),
+      next: () => this.loadBudgetsWithSpending(this.currentUser.id),
       error: err => console.error('Error deleting budget', err)
     });
+  }
+
+  hasBudgetAlerts(){
+    return this.budgetList.some(b => b.isOverBudget || b.nearThreshold);
   }
 }

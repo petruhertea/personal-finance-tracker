@@ -18,17 +18,49 @@
     </div>
   </div>
 
+  <!-- Alert Summary (if any warnings/overages exist) -->
+  <div class="row mb-3" *ngIf="hasBudgetAlerts()">
+    <div class="col">
+      <div class="alert alert-warning d-flex align-items-start">
+        <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
+        <div class="flex-grow-1">
+          <h6 class="alert-heading mb-1">Budget Alerts</h6>
+          <ul class="mb-0 small">
+            <li *ngFor="let budget of budgetList">
+              <span *ngIf="budget.isOverBudget">
+                <strong>{{ budget.categoryName }}</strong>: 
+                You've exceeded your budget by {{ (budget.percentage - 100).toFixed(1) }}%
+              </span>
+              <span *ngIf="!budget.isOverBudget && budget.nearThreshold">
+                <strong>{{ budget.categoryName }}</strong>: 
+                You've used {{ budget.percentage.toFixed(1) }}% of your budget
+              </span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Budgets Grid - Desktop -->
   <div class="row g-3 d-none d-md-flex">
     <div class="col-md-6 col-lg-4" *ngFor="let budget of budgetList">
-      <div class="card shadow-sm h-100">
+      <div class="card shadow-sm h-100"
+           [class.border-danger]="budget.isOverBudget"
+           [class.border-warning]="budget.nearThreshold && !budget.isOverBudget">
         <div class="card-body">
+          <!-- Header with Status Badge -->
           <div class="d-flex justify-content-between align-items-start mb-3">
-            <div>
-              <h6 class="card-subtitle text-muted mb-1">
-                {{ budget.categoryName }}
-              </h6>
-              <h3 class="card-title mb-0">{{ budget.amount | currency }}</h3>
+            <div class="flex-grow-1">
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <h6 class="card-subtitle text-muted mb-0">
+                  {{ budget.categoryName }}
+                </h6>
+                <span class="badge" [ngClass]="getStatusBadgeClass(budget)">
+                  {{ getBudgetStatus(budget) }}
+                </span>
+              </div>
+              <h3 class="card-title mb-0">{{ budget.budgetAmount | currency }}</h3>
             </div>
             <div class="btn-group btn-group-sm">
               <button class="btn btn-outline-primary" (click)="editBudget(budget)" title="Edit">
@@ -40,6 +72,7 @@
             </div>
           </div>
 
+          <!-- Date Range -->
           <div class="mb-2">
             <small class="text-muted">
               <i class="bi bi-calendar-range me-1"></i>
@@ -48,13 +81,57 @@
             </small>
           </div>
 
-          <!-- Progress bar placeholder -->
-          <div class="progress" style="height: 8px;">
-            <div class="progress-bar bg-success"
-                 role="progressbar"
-                 [style.width]="'60%'"></div>
+          <!-- Spending Summary -->
+          <div class="row text-center mb-2">
+            <div class="col-4">
+              <small class="text-muted d-block">Spent</small>
+              <strong class="text-danger">{{ budget.spent | currency:'USD':'symbol':'1.0-0' }}</strong>
+            </div>
+            <div class="col-4">
+              <small class="text-muted d-block">Budget</small>
+              <strong>{{ budget.budgetAmount | currency:'USD':'symbol':'1.0-0' }}</strong>
+            </div>
+            <div class="col-4">
+              <small class="text-muted d-block">Remaining</small>
+              <strong [class.text-success]="budget.remaining > 0"
+                      [class.text-danger]="budget.remaining <= 0">
+                {{ budget.remaining | currency:'USD':'symbol':'1.0-0' }}
+              </strong>
+            </div>
           </div>
-          <small class="text-muted">60% used</small>
+
+          <!-- Progress Bar -->
+          <div class="progress mb-1" style="height: 10px;">
+            <div class="progress-bar" 
+                 [ngClass]="getProgressBarColor(budget)"
+                 role="progressbar" 
+                 [style.width]="getProgressWidth(budget)"
+                 [attr.aria-valuenow]="budget.percentage"
+                 aria-valuemin="0" 
+                 aria-valuemax="100">
+            </div>
+          </div>
+          <small [class.text-danger]="budget.isOverBudget"
+                 [class.text-warning]="budget.nearThreshold && !budget.isOverBudget"
+                 [class.text-muted]="!budget.nearThreshold">
+            {{ budget.percentage | number:'1.1-1' }}% used
+          </small>
+
+          <!-- Alert Message -->
+          <div class="alert alert-danger alert-sm mt-2 mb-0 py-1 px-2" 
+               *ngIf="budget.isOverBudget">
+            <small>
+              <i class="bi bi-exclamation-circle me-1"></i>
+              Over budget by {{ (budget.percentage - 100) | number:'1.0-0' }}%
+            </small>
+          </div>
+          <div class="alert alert-warning alert-sm mt-2 mb-0 py-1 px-2" 
+               *ngIf="!budget.isOverBudget && budget.nearThreshold">
+            <small>
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              Approaching limit ({{ budget.alertThreshold }}% threshold)
+            </small>
+          </div>
         </div>
       </div>
     </div>
@@ -76,12 +153,21 @@
 
   <!-- Budgets List - Mobile -->
   <div class="d-md-none">
-    <div class="card mb-2" *ngFor="let budget of budgetList">
+    <div class="card mb-2" 
+         *ngFor="let budget of budgetList"
+         [class.border-danger]="budget.isOverBudget"
+         [class.border-warning]="budget.nearThreshold && !budget.isOverBudget">
       <div class="card-body">
+        <!-- Header -->
         <div class="d-flex justify-content-between align-items-start mb-2">
-          <div>
-            <h6 class="mb-1">{{ budget.categoryName }}</h6>
-            <h4 class="mb-0 text-primary">{{ budget.amount | currency }}</h4>
+          <div class="flex-grow-1">
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <h6 class="mb-0">{{ budget.categoryName }}</h6>
+              <span class="badge" [ngClass]="getStatusBadgeClass(budget)">
+                {{ getBudgetStatus(budget) }}
+              </span>
+            </div>
+            <h4 class="mb-0 text-primary">{{ budget.budgetAmount | currency }}</h4>
           </div>
           <div class="btn-group-vertical btn-group-sm">
             <button class="btn btn-outline-primary" (click)="editBudget(budget)">
@@ -92,15 +178,45 @@
             </button>
           </div>
         </div>
+
+        <!-- Date Range -->
         <small class="text-muted d-block mb-2">
           {{ budget.startDate | date:'shortDate' }} -
           {{ budget.endDate | date:'shortDate' }}
         </small>
-        <div class="progress" style="height: 8px;">
-          <div class="progress-bar bg-success"
-               role="progressbar"
-               [style.width]="'60%'"></div>
+
+        <!-- Spending Info -->
+        <div class="row text-center mb-2 small">
+          <div class="col-4">
+            <div class="text-muted">Spent</div>
+            <strong class="text-danger">{{ budget.spent | currency:'USD':'symbol':'1.0-0' }}</strong>
+          </div>
+          <div class="col-4">
+            <div class="text-muted">Budget</div>
+            <strong>{{ budget.budgetAmount | currency:'USD':'symbol':'1.0-0' }}</strong>
+          </div>
+          <div class="col-4">
+            <div class="text-muted">Left</div>
+            <strong [class.text-success]="budget.remaining > 0"
+                    [class.text-danger]="budget.remaining <= 0">
+              {{ budget.remaining | currency:'USD':'symbol':'1.0-0' }}
+            </strong>
+          </div>
         </div>
+
+        <!-- Progress Bar -->
+        <div class="progress mb-1" style="height: 8px;">
+          <div class="progress-bar" 
+               [ngClass]="getProgressBarColor(budget)"
+               role="progressbar" 
+               [style.width]="getProgressWidth(budget)">
+          </div>
+        </div>
+        <small [class.text-danger]="budget.isOverBudget"
+               [class.text-warning]="budget.nearThreshold && !budget.isOverBudget"
+               [class.text-muted]="!budget.nearThreshold">
+          {{ budget.percentage | number:'1.0-0' }}% used
+        </small>
       </div>
     </div>
 
@@ -117,7 +233,7 @@
     </div>
   </div>
 
-  <!-- Form Modal -->
+  <!-- Form Modal (unchanged - keep your existing form) -->
   <div class="modal fade" 
        [class.show]="showForm"
        [style.display]="showForm ? 'block' : 'none'"
@@ -125,7 +241,6 @@
        *ngIf="showForm">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <!-- Dynamic Header Color -->
         <div class="modal-header" 
              [class.bg-primary]="!editingBudget"
              [class.bg-warning]="editingBudget"
@@ -144,7 +259,6 @@
         
         <form [formGroup]="budgetForm" (ngSubmit)="saveBudget()">
           <div class="modal-body">
-            <!-- Edit Mode Indicator -->
             <div class="alert alert-warning d-flex align-items-center mb-3" 
                  *ngIf="editingBudget">
               <i class="bi bi-info-circle-fill me-2"></i>

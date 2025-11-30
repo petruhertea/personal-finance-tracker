@@ -2,8 +2,10 @@ package com.petruth.personal_finance_tracker.controller;
 
 import com.petruth.personal_finance_tracker.dto.BudgetDTO;
 import com.petruth.personal_finance_tracker.entity.Budget;
+import com.petruth.personal_finance_tracker.scheduler.BudgetAlertScheduler;
 import com.petruth.personal_finance_tracker.security.SecurityUtil;
 import com.petruth.personal_finance_tracker.service.BudgetService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -47,6 +49,15 @@ public class BudgetController {
             budgetService.deleteById(id);
         }
         return "Budget id -> "+id+" deleted successfully!";
+    }
+
+    @Autowired
+    private BudgetAlertScheduler budgetAlertScheduler;
+
+    @PostMapping("/check-alerts")
+    public String manualCheckAlerts() {
+        budgetAlertScheduler.triggerManualCheck();
+        return "Budget alerts check triggered";
     }
 }
 

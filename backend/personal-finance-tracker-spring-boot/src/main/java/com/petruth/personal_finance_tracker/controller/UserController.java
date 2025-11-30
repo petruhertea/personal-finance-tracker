@@ -1,6 +1,9 @@
 package com.petruth.personal_finance_tracker.controller;
 
-import com.petruth.personal_finance_tracker.dto.*;
+import com.petruth.personal_finance_tracker.dto.BudgetWithSpending;
+import com.petruth.personal_finance_tracker.dto.CategoryDTO;
+import com.petruth.personal_finance_tracker.dto.TransactionDTO;
+import com.petruth.personal_finance_tracker.dto.UserResponse;
 import com.petruth.personal_finance_tracker.entity.Transaction;
 import com.petruth.personal_finance_tracker.entity.User;
 import com.petruth.personal_finance_tracker.security.SecurityUtil;
@@ -70,9 +73,9 @@ public class UserController {
     }
 
     @GetMapping("/{userId}/budgets")
-    public List<BudgetDTO> getBudgetsByUser(@PathVariable Long userId) {
+    public List<BudgetWithSpending> getBudgetsByUser(@PathVariable Long userId) {
         validateUserAccess(userId);
-        return budgetService.findByUserId(userId);
+        return budgetService.getAllBudgetsWithSpending(userId);
     }
 
     @GetMapping("/me")

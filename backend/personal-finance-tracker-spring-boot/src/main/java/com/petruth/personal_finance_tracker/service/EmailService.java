@@ -84,11 +84,42 @@ public class EmailService {
         }
     }
 
-    /**
-     * Send budget alert (we'll implement this later)
-     */
+    // Send budget alert email
     public void sendBudgetAlert(String toEmail, String username, String categoryName,
-                                double spending, double budget, double percentage) {
-        // TODO: Implement later
+                                double spending, double budget, double percentage,
+                                String alertType) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(fromEmail);
+            helper.setTo(toEmail);
+
+            String subject = alertType.equals("WARNING")
+                    ? "⚠️ Budget Warning: " + categoryName
+                    : "🚨 Budget Exceeded: " + categoryName;
+            helper.setSubject(subject);
+
+            Context context = new Context();
+            context.setVariable("username", username);
+            context.setVariable("categoryName", categoryName);
+
+            // ✅ Pass as numbers, not strings
+            context.setVariable("spending", spending);
+            context.setVariable("budget", budget);
+            context.setVariable("percentage", percentage);
+            context.setVariable("alertType", alertType);
+            context.setVariable("budgetsUrl", baseUrl + "/budgets");
+
+            String htmlContent = templateEngine.process("budget-alert", context);
+            helper.setText(htmlContent, true);
+
+            mailSender.send(message);
+            logger.info("✅ Budget alert sent to: {} for category: {}", toEmail, categoryName);
+
+        } catch (MessagingException e) {
+            logger.error("❌ Failed to send budget alert to: {}", toEmail, e);
+            throw new RuntimeException("Failed to send budget alert", e);
+        }
     }
 }
