@@ -105,6 +105,25 @@ public class TransactionServiceImpl implements TransactionService{
         spec = spec.and(TransactionSpecifications.belongsToUser(userId));
 
         // Apply filters (existing code)...
+        // apply filter criteria
+        if (type != null) {
+            spec = spec.and(TransactionSpecifications.hasType(Transaction.TransactionType.valueOf(type.toUpperCase())));
+        }
+        if (categoryId != null) {
+            spec = spec.and(TransactionSpecifications.hasCategory(categoryId));
+        }
+        if (minAmount != null) {
+            spec = spec.and(TransactionSpecifications.minAmount(minAmount));
+        }
+        if (maxAmount != null) {
+            spec = spec.and(TransactionSpecifications.maxAmount(maxAmount));
+        }
+        if (fromDate != null) {
+            spec = spec.and(TransactionSpecifications.dateAfter(LocalDateTime.parse(fromDate)));
+        }
+        if (toDate != null) {
+            spec = spec.and(TransactionSpecifications.dateBefore(LocalDateTime.parse(toDate)));
+        }
 
         // Create pageable with sorting
         Sort.Direction direction = sortDirection.equalsIgnoreCase("asc")

@@ -1,3 +1,4 @@
+// transaction.component.ts - FIXED VERSION
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { TransactionService } from '../../services/transaction.service';
@@ -10,7 +11,6 @@ import { UserResponse } from '../../common/user-response';
 import { finalize, debounceTime } from 'rxjs';
 import { LoadingSpinnerComponent } from '../loading-spinner/loading-spinner.component';
 import { ErrorMessageComponent } from '../error-message/error-message.component';
-import { UserService } from '../../services/user.service';
 
 @Component({
   selector: 'app-transactions',
@@ -33,7 +33,8 @@ export class TransactionComponent implements OnInit {
   editingTransaction: Transaction | null = null;
   categories: Category[] = [];
 
-  currentPage = 0;
+  // Pagination state
+  currentPage = 0; // Backend uses 0-based indexing
   pageSize = 20;
   totalPages = 0;
   totalElements = 0;
@@ -48,7 +49,6 @@ export class TransactionComponent implements OnInit {
 
   constructor(
     private fb: FormBuilder,
-    private userService: UserService,
     private authService: AuthService,
     private categoryService: CategoryService,
     private transactionService: TransactionService
@@ -82,7 +82,6 @@ export class TransactionComponent implements OnInit {
   }
 
   initFilterForm() {
-    // Initialize with null instead of empty strings
     this.filterForm = this.fb.group({
       type: [null],
       categoryId: [null],
@@ -96,9 +95,9 @@ export class TransactionComponent implements OnInit {
     this.filterForm.valueChanges
       .pipe(debounceTime(300))
       .subscribe(() => {
-        // Reset to first page whenever filters change so backend returns correct page+totals
+        // ✅ Reset to first page whenever filters change
         this.currentPage = 0;
-        console.log('Filter changed:', this.filterForm.value);
+        console.log('Filter changed, resetting to page 0');
         this.loadTransactions();
       });
   }
@@ -117,18 +116,32 @@ export class TransactionComponent implements OnInit {
     this.isLoading = true;
     const filters = this.buildFilters();
 
+    console.log('Loading transactions:', {
+      page: this.currentPage,
+      size: this.pageSize,
+      filters
+    });
+
     this.transactionService.getTransactionsPaginated(
       this.currentUser.id,
       filters,
-      this.currentPage,
+      this.currentPage, // Backend expects 0-based
       Number(this.pageSize)
     ).pipe(
       finalize(() => this.isLoading = false)
     ).subscribe({
       next: (response) => {
+        console.log('Received response:', {
+          content: response.content.length,
+          totalPages: response.totalPages,
+          totalElements: response.totalElements,
+          currentPage: response.number
+        });
+
         this.transactions = response.content;
         this.totalPages = response.totalPages;
         this.totalElements = response.totalElements;
+        this.currentPage = response.number; // ✅ Update current page from response
         this.errorMessage = '';
       },
       error: err => {
@@ -141,6 +154,7 @@ export class TransactionComponent implements OnInit {
   nextPage() {
     if (this.currentPage < this.totalPages - 1) {
       this.currentPage++;
+      console.log('Next page:', this.currentPage);
       this.loadTransactions();
     }
   }
@@ -148,21 +162,22 @@ export class TransactionComponent implements OnInit {
   previousPage() {
     if (this.currentPage > 0) {
       this.currentPage--;
+      console.log('Previous page:', this.currentPage);
       this.loadTransactions();
     }
   }
 
   goToPage(page: number) {
+    console.log('Go to page:', page);
     this.currentPage = page;
     this.loadTransactions();
   }
 
-  // Build filters object, excluding null/empty values
+  // ✅ Build filters object, excluding null/empty values
   private buildFilters(): any {
     const formValue = this.filterForm.value;
     const filters: any = {};
 
-    // Only include non-null, non-empty values
     if (formValue.type && formValue.type !== '') {
       filters.type = formValue.type;
     }
@@ -275,6 +290,7 @@ export class TransactionComponent implements OnInit {
     this.loadTransactions();
   }
 
+  // ✅ Fixed page numbers display (convert from 0-based to 1-based for UI)
   getPageNumbers(): number[] {
     const pages: number[] = [];
     const maxVisible = 5;
@@ -296,6 +312,22 @@ export class TransactionComponent implements OnInit {
   onPageSizeChange() {
     this.currentPage = 0; // Reset to first page
     this.pageSize = Number(this.pageSize);
+    console.log('Page size changed to:', this.pageSize);
     this.loadTransactions();
+  }
+
+  // ✅ Helper to get display page number (1-based for UI)
+  getDisplayPageNumber(page: number): number {
+    return page + 1;
+  }
+
+  // ✅ Helper to get start index for display
+  getStartIndex(): number {
+    return this.currentPage * this.pageSize + 1;
+  }
+
+  // ✅ Helper to get end index for display
+  getEndIndex(): number {
+    return Math.min((this.currentPage + 1) * this.pageSize, this.totalElements);
   }
 }

@@ -54,7 +54,7 @@ export class TransactionService {
 
   getTransactionsPaginated(
     userId: number,
-    filters: any,
+    filters?: any,
     page: number = 0,
     size: number = 20,
     sortBy: string = 'date',
@@ -94,6 +94,8 @@ export class TransactionService {
         params = params.set('maxAmount', filters.maxAmount.toString());
         console.log('Added maxAmount param:', filters.maxAmount);
       }
+
+      console.log('Final URL params:', params.toString());
     }
 
     return this.http.get<PagedResponse<Transaction>>(
