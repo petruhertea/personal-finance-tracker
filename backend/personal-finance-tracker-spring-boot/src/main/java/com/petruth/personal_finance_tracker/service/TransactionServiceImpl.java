@@ -90,12 +90,6 @@ public class TransactionServiceImpl implements TransactionService{
     }
 
     @Override
-    @Cacheable(
-            key = "'user:' + #userId + ':page:' + #page + ':filters:' + " +
-                    "#type + ':' + #categoryId + ':' + #fromDate + ':' + #toDate",
-            condition = "#page < 5",  // Only cache first 5 pages
-            unless = "#result == null || #result.isEmpty()"
-    )
     public Page<TransactionDTO> findByUserId(
             int userId, String type, String fromDate, String toDate,
             Long categoryId, Double minAmount, Double maxAmount,
@@ -105,7 +99,6 @@ public class TransactionServiceImpl implements TransactionService{
         spec = spec.and(TransactionSpecifications.belongsToUser(userId));
 
         // Apply filters (existing code)...
-        // apply filter criteria
         if (type != null) {
             spec = spec.and(TransactionSpecifications.hasType(Transaction.TransactionType.valueOf(type.toUpperCase())));
         }

@@ -35,7 +35,7 @@ export class TransactionComponent implements OnInit {
 
   // Pagination state
   currentPage = 0; // Backend uses 0-based indexing
-  pageSize = 20;
+  pageSize: number = 20; // ✅ Explicitly typed as number with initial value
   totalPages = 0;
   totalElements = 0;
 
@@ -116,26 +116,28 @@ export class TransactionComponent implements OnInit {
     this.isLoading = true;
     const filters = this.buildFilters();
 
-    console.log('Loading transactions:', {
+    console.log('🔍 Loading transactions with:', {
       page: this.currentPage,
       size: this.pageSize,
-      filters
+      sizeType: typeof this.pageSize,
+      filters: filters
     });
 
     this.transactionService.getTransactionsPaginated(
       this.currentUser.id,
       filters,
       this.currentPage, // Backend expects 0-based
-      Number(this.pageSize)
+      Number(this.pageSize) // ✅ Ensure it's always a number
     ).pipe(
       finalize(() => this.isLoading = false)
     ).subscribe({
       next: (response) => {
-        console.log('Received response:', {
+        console.log('✅ Received response:', {
           content: response.content.length,
           totalPages: response.totalPages,
           totalElements: response.totalElements,
-          currentPage: response.number
+          currentPage: response.number,
+          size: response.size
         });
 
         this.transactions = response.content;
@@ -146,7 +148,7 @@ export class TransactionComponent implements OnInit {
       },
       error: err => {
         this.errorMessage = 'Failed to load transactions';
-        console.error('Error loading transactions', err);
+        console.error('❌ Error loading transactions', err);
       }
     });
   }
@@ -310,9 +312,16 @@ export class TransactionComponent implements OnInit {
   }
 
   onPageSizeChange() {
-    this.currentPage = 0; // Reset to first page
+    console.log('Page size change triggered:', this.pageSize, typeof this.pageSize);
+    
+    // ✅ CRITICAL: Force conversion to number AND reset page
     this.pageSize = Number(this.pageSize);
-    console.log('Page size changed to:', this.pageSize);
+    this.currentPage = 0; // Reset to first page
+    
+    console.log('After conversion - pageSize:', this.pageSize, 'type:', typeof this.pageSize);
+    console.log('Resetting to page 0');
+    
+    // Force immediate load
     this.loadTransactions();
   }
 
