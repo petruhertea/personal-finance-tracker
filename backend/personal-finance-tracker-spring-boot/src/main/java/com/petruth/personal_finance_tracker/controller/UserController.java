@@ -11,6 +11,7 @@ import com.petruth.personal_finance_tracker.service.BudgetService;
 import com.petruth.personal_finance_tracker.service.CategoryService;
 import com.petruth.personal_finance_tracker.service.TransactionService;
 import com.petruth.personal_finance_tracker.service.UserService;
+import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -42,6 +43,29 @@ public class UserController {
         if (!securityUtil.isCurrentUser(userId)) {
             throw new SecurityException("Unauthorized access to user data");
         }
+    }
+
+    // TransactionController.java
+    @GetMapping("/{userId}/transactions/paginated")
+    public Page<TransactionDTO> getUserTransactionsPaginated(
+            @PathVariable Long userId,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String fromDate,
+            @RequestParam(required = false) String toDate,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) Double minAmount,
+            @RequestParam(required = false) Double maxAmount,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "date") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDirection
+    ) {
+        validateUserAccess(userId);
+        return transactionService.findByUserId(
+                userId.intValue(), type, fromDate, toDate,
+                categoryId, minAmount, maxAmount,
+                page, size, sortBy, sortDirection
+        );
     }
 
     @GetMapping("/{userId}/transactions")

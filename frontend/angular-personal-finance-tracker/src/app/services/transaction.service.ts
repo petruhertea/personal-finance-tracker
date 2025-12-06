@@ -17,7 +17,7 @@ export class TransactionService {
   getTransactions(userId: number, filters?: any): Observable<Transaction[]> {
     // Use HttpParams for better parameter handling
     let params = new HttpParams();
-    
+
     if (filters) {
       // Add each filter if it exists and is not empty
       if (filters.type && filters.type !== '') {
@@ -48,8 +48,58 @@ export class TransactionService {
 
     console.log('Final URL params:', params.toString());
     console.log('Full URL:', `${this.userUrl}/${userId}/transactions?${params.toString()}`);
-    
+
     return this.http.get<Transaction[]>(`${this.userUrl}/${userId}/transactions`, { params });
+  }
+
+  getTransactionsPaginated(
+    userId: number,
+    filters: any,
+    page: number = 0,
+    size: number = 20,
+    sortBy: string = 'date',
+    sortDirection: string = 'desc'
+  ): Observable<PagedResponse<Transaction>> {
+    let params = new HttpParams()
+      .set('page', page.toString())
+      .set('size', size.toString())
+      .set('sortBy', sortBy)
+      .set('sortDirection', sortDirection);
+
+    // Add filters...
+
+    if (filters) {
+      // Add each filter if it exists and is not empty
+      if (filters.type && filters.type !== '') {
+        params = params.set('type', filters.type);
+        console.log('Added type param:', filters.type);
+      }
+      if (filters.categoryId && filters.categoryId !== '' && filters.categoryId !== null) {
+        params = params.set('categoryId', filters.categoryId.toString());
+        console.log('Added categoryId param:', filters.categoryId);
+      }
+      if (filters.fromDate && filters.fromDate !== '') {
+        params = params.set('fromDate', filters.fromDate);
+        console.log('Added fromDate param:', filters.fromDate);
+      }
+      if (filters.toDate && filters.toDate !== '') {
+        params = params.set('toDate', filters.toDate);
+        console.log('Added toDate param:', filters.toDate);
+      }
+      if (filters.minAmount && filters.minAmount !== '' && filters.minAmount !== null) {
+        params = params.set('minAmount', filters.minAmount.toString());
+        console.log('Added minAmount param:', filters.minAmount);
+      }
+      if (filters.maxAmount && filters.maxAmount !== '' && filters.maxAmount !== null) {
+        params = params.set('maxAmount', filters.maxAmount.toString());
+        console.log('Added maxAmount param:', filters.maxAmount);
+      }
+    }
+
+    return this.http.get<PagedResponse<Transaction>>(
+      `${this.userUrl}/${userId}/transactions/paginated`,
+      { params }
+    );
   }
 
   createTransaction(tx: Transaction): Observable<Transaction> {
@@ -63,4 +113,12 @@ export class TransactionService {
   deleteTransaction(id: number): Observable<string> {
     return this.http.delete(`${this.apiUrl}/${id}`, { responseType: 'text' });
   }
+}
+
+export interface PagedResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
 }

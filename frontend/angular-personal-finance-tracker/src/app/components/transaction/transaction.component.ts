@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { TransactionService } from '../../services/transaction.service';
 import { Transaction } from '../../common/transaction';
 import { CommonModule } from '@angular/common';
@@ -19,7 +19,8 @@ import { UserService } from '../../services/user.service';
     ReactiveFormsModule,
     CommonModule,
     LoadingSpinnerComponent,
-    ErrorMessageComponent
+    ErrorMessageComponent,
+    FormsModule
   ],
   templateUrl: './transaction.component.html',
   styleUrl: './transaction.component.css'
@@ -31,6 +32,13 @@ export class TransactionComponent implements OnInit {
   transactionForm!: FormGroup;
   editingTransaction: Transaction | null = null;
   categories: Category[] = [];
+
+  currentPage = 0;
+  pageSize = 20;
+  totalPages = 0;
+  totalElements = 0;
+
+  Math = Math;
 
   // UI State
   isLoading = false;
@@ -88,6 +96,8 @@ export class TransactionComponent implements OnInit {
     this.filterForm.valueChanges
       .pipe(debounceTime(300))
       .subscribe(() => {
+        // Reset to first page whenever filters change so backend returns correct page+totals
+        this.currentPage = 0;
         console.log('Filter changed:', this.filterForm.value);
         this.loadTransactions();
       });
@@ -107,21 +117,44 @@ export class TransactionComponent implements OnInit {
     this.isLoading = true;
     const filters = this.buildFilters();
 
-    console.log('Loading transactions with filters:', filters);
+    this.transactionService.getTransactionsPaginated(
+      this.currentUser.id,
+      filters,
+      this.currentPage,
+      Number(this.pageSize)
+    ).pipe(
+      finalize(() => this.isLoading = false)
+    ).subscribe({
+      next: (response) => {
+        this.transactions = response.content;
+        this.totalPages = response.totalPages;
+        this.totalElements = response.totalElements;
+        this.errorMessage = '';
+      },
+      error: err => {
+        this.errorMessage = 'Failed to load transactions';
+        console.error('Error loading transactions', err);
+      }
+    });
+  }
 
-    this.transactionService.getTransactions(this.currentUser.id, filters)
-      .pipe(finalize(() => this.isLoading = false))
-      .subscribe({
-        next: (txs: Transaction[]) => {
-          this.transactions = txs;
-          this.errorMessage = '';
-          console.log('Loaded transactions:', txs.length);
-        },
-        error: err => {
-          this.errorMessage = 'Failed to load transactions';
-          console.error('Error loading transactions', err);
-        }
-      });
+  nextPage() {
+    if (this.currentPage < this.totalPages - 1) {
+      this.currentPage++;
+      this.loadTransactions();
+    }
+  }
+
+  previousPage() {
+    if (this.currentPage > 0) {
+      this.currentPage--;
+      this.loadTransactions();
+    }
+  }
+
+  goToPage(page: number) {
+    this.currentPage = page;
+    this.loadTransactions();
   }
 
   // Build filters object, excluding null/empty values
@@ -228,15 +261,41 @@ export class TransactionComponent implements OnInit {
   clearError() {
     this.errorMessage = '';
   }
-  
+
   resetFilters() {
     this.filterForm.reset({
-      type: '',
-      categoryId: '',
-      fromDate: '',
-      toDate: '',
-      minAmount: '',
-      maxAmount: ''
+      type: null,
+      categoryId: null,
+      fromDate: null,
+      toDate: null,
+      minAmount: null,
+      maxAmount: null
     });
+    this.currentPage = 0;
+    this.loadTransactions();
+  }
+
+  getPageNumbers(): number[] {
+    const pages: number[] = [];
+    const maxVisible = 5;
+
+    let start = Math.max(0, this.currentPage - Math.floor(maxVisible / 2));
+    let end = Math.min(this.totalPages, start + maxVisible);
+
+    if (end - start < maxVisible) {
+      start = Math.max(0, end - maxVisible);
+    }
+
+    for (let i = start; i < end; i++) {
+      pages.push(i);
+    }
+
+    return pages;
+  }
+
+  onPageSizeChange() {
+    this.currentPage = 0; // Reset to first page
+    this.pageSize = Number(this.pageSize);
+    this.loadTransactions();
   }
 }

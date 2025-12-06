@@ -76,9 +76,14 @@ public class BudgetServiceImpl implements BudgetService{
         Budget existing = budgetRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Budget not found"));
 
+        // ✅ Fetch the new category
+        Category category = categoryRepository.findById(budgetDTO.getCategoryId())
+                .orElseThrow(() -> new RuntimeException("Category not found"));
+
         existing.setAmount(budgetDTO.getAmount());
         existing.setStartDate(budgetDTO.getStartDate());
         existing.setEndDate(budgetDTO.getEndDate());
+        existing.setCategory(category);
 
         return budgetMapper.toBudgetDTO(budgetRepository.save(existing));
     }

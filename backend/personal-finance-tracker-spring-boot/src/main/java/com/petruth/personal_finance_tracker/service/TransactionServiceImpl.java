@@ -10,6 +10,9 @@ import com.petruth.personal_finance_tracker.utils.TransactionMapper;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -84,6 +87,34 @@ public class TransactionServiceImpl implements TransactionService{
                 .stream()
                 .map(transactionMapper::toTransactionDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Cacheable(
+            key = "'user:' + #userId + ':page:' + #page + ':filters:' + " +
+                    "#type + ':' + #categoryId + ':' + #fromDate + ':' + #toDate",
+            condition = "#page < 5",  // Only cache first 5 pages
+            unless = "#result == null || #result.isEmpty()"
+    )
+    public Page<TransactionDTO> findByUserId(
+            int userId, String type, String fromDate, String toDate,
+            Long categoryId, Double minAmount, Double maxAmount,
+            int page, int size, String sortBy, String sortDirection
+    ) {
+        Specification<Transaction> spec = Specification.unrestricted();
+        spec = spec.and(TransactionSpecifications.belongsToUser(userId));
+
+        // Apply filters (existing code)...
+
+        // Create pageable with sorting
+        Sort.Direction direction = sortDirection.equalsIgnoreCase("asc")
+                ? Sort.Direction.ASC
+                : Sort.Direction.DESC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+
+        Page<Transaction> transactionPage = transactionRepository.findAll(spec, pageable);
+
+        return transactionPage.map(transactionMapper::toTransactionDTO);
     }
 
 
