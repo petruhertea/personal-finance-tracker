@@ -54,10 +54,10 @@ public class CsvImportService{
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
 
             // month names in Romanian (e.g. "4 nov. 2025" or "4 nov 2025")
-            DateTimeFormatter.ofPattern("d MMM yyyy", new Locale("ro")),
-            DateTimeFormatter.ofPattern("dd MMM yyyy", new Locale("ro")),
-            DateTimeFormatter.ofPattern("d MMM. yyyy", new Locale("ro")),
-            DateTimeFormatter.ofPattern("dd MMM. yyyy", new Locale("ro"))
+            DateTimeFormatter.ofPattern("d MMM yyyy", Locale.of("ro")),
+            DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.of("ro")),
+            DateTimeFormatter.ofPattern("d MMM. yyyy", Locale.of("ro")),
+            DateTimeFormatter.ofPattern("dd MMM. yyyy", Locale.of("ro"))
     };
 
     public CsvImportService(TransactionService transactionService,

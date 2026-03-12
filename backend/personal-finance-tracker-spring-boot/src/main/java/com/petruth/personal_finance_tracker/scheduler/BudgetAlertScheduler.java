@@ -97,7 +97,7 @@ public class BudgetAlertScheduler {
 
             logger.info("📧 Sent {} alert to {} for category: {} ({}%)",
                     budget.getAlertType(), user.getUsername(),
-                    budget.categoryName(), String.format("%.1f", budget.percentage()));
+                    budget.categoryName(), "%.1f".formatted(budget.percentage()));
 
         } catch (Exception e) {
             logger.error("❌ Failed to send budget alert to {}: {}",

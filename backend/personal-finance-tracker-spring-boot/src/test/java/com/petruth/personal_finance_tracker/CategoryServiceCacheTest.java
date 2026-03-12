@@ -7,12 +7,11 @@ import com.petruth.personal_finance_tracker.service.CategoryService;
 import com.petruth.personal_finance_tracker.utils.CategoryMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.cache.CacheManager;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 import java.util.Collections;
 import java.util.List;
@@ -28,7 +27,7 @@ class CategoryServiceCacheTest {
     @Autowired
     private CategoryService categoryService;
 
-    @SpyBean
+    @MockitoSpyBean
     private CategoryRepository categoryRepository;
 
     @Autowired

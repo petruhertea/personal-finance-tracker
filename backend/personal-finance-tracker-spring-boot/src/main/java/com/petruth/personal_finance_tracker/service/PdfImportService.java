@@ -129,10 +129,10 @@ public class PdfImportService {
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
 
             // month names in Romanian (e.g. "4 nov. 2025" or "4 nov 2025")
-            DateTimeFormatter.ofPattern("d MMM yyyy", new Locale("ro")),
-            DateTimeFormatter.ofPattern("dd MMM yyyy", new Locale("ro")),
-            DateTimeFormatter.ofPattern("d MMM. yyyy", new Locale("ro")),
-            DateTimeFormatter.ofPattern("dd MMM. yyyy", new Locale("ro"))
+            DateTimeFormatter.ofPattern("d MMM yyyy", Locale.of("ro")),
+            DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.of("ro")),
+            DateTimeFormatter.ofPattern("d MMM. yyyy", Locale.of("ro")),
+            DateTimeFormatter.ofPattern("dd MMM. yyyy", Locale.of("ro"))
     };
 
     public PdfImportService(TransactionService transactionService,
@@ -217,7 +217,7 @@ public class PdfImportService {
                             saved.getDescription().substring(0, Math.min(30, saved.getDescription().length())));
 
                 } catch (Exception e) {
-                    String errorMsg = String.format("Row %d: %s - %s",
+                    String errorMsg = "Row %d: %s - %s".formatted(
                             processedCount,
                             e.getMessage(),
                             parsed.description.substring(0, Math.min(50, parsed.description.length())));
@@ -469,7 +469,7 @@ public class PdfImportService {
                 while (idx >= 0 && amountTokens.size() < 2) {
                     String t = tokens[idx].replaceAll("[^0-9,\\.\\-+€RONron]", "");
                     if (t.matches(".*\\d.*")) {
-                        amountTokens.add(0, tokens[idx]); // keep original order
+                        amountTokens.addFirst(tokens[idx]); // keep original order
                     } else {
                         break;
                     }
@@ -485,11 +485,11 @@ public class PdfImportService {
                 BigDecimal debit = null;
                 BigDecimal credit = null;
                 if (amountTokens.size() == 2) {
-                    debit = parseRomanianAmount(amountTokens.get(0));
+                    debit = parseRomanianAmount(amountTokens.getFirst());
                     credit = parseRomanianAmount(amountTokens.get(1));
                 } else if (amountTokens.size() == 1) {
                     // single amount -> ambiguous, treat as debit unless description suggests inflow
-                    BigDecimal val = parseRomanianAmount(amountTokens.get(0));
+                    BigDecimal val = parseRomanianAmount(amountTokens.getFirst());
                     // heuristics
                     if (description.toLowerCase().contains("alimentare") ||
                             description.toLowerCase().contains("deposit") ||
@@ -1175,7 +1175,7 @@ public class PdfImportService {
             byte[] hash = md.digest(data.getBytes());
             StringBuilder sb = new StringBuilder();
             for (byte b : hash) {
-                sb.append(String.format("%02x", b));
+                sb.append("%02x".formatted(b));
             }
             return sb.toString();
         } catch (Exception e) {

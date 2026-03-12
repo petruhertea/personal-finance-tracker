@@ -1,6 +1,6 @@
 package com.petruth.personal_finance_tracker.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.petruth.personal_finance_tracker.dto.*;
 import com.petruth.personal_finance_tracker.security.SecurityUtil;
 import com.petruth.personal_finance_tracker.service.ProfileService;

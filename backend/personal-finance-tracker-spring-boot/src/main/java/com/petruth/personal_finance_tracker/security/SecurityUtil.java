@@ -38,7 +38,7 @@ public class SecurityUtil {
         Long currentUserId = getCurrentUserId();
         if (!currentUserId.equals(resourceOwnerId)) {
             throw new SecurityException(
-                    String.format("User %d is not authorized to access %s owned by user %d",
+                    "User %d is not authorized to access %s owned by user %d".formatted(
                             currentUserId, resourceType, resourceOwnerId)
             );
         }
