@@ -27,13 +27,13 @@ A full-stack personal finance management application. The backend is a secure, p
 
 ```
 ┌─────────────────────────────┐        ┌──────────────────────────────────┐
-│   Angular 19 Frontend        │        │   Spring Boot 3.5.7 Backend       │
-│   localhost:4200             │◄──────►│   localhost:8080                  │
-│                              │  REST  │                                  │
-│  • Bootstrap 5 UI            │  +     │  • Spring Security + JWT         │
-│  • Chart.js visualizations   │  HTTP  │  • MySQL / Spring Data JPA       │
-│  • HttpOnly cookie auth      │  Only  │  • CSV / PDF import              │
-│  • Reactive RxJS state       │ Cookies│  • Email alerts (Thymeleaf)      │
+│   Angular 19 Frontend        │        │   Spring Boot 4.0.3 Backend     │
+│   localhost:4200             │◄──────►│   localhost:8080                │
+│                              │  REST  │                                 │
+│  • Bootstrap 5 UI            │  +     │  • Spring Security + JWT        │
+│  • Chart.js visualizations   │  HTTP  │  • MySQL / Spring Data JPA      │
+│  • HttpOnly cookie auth      │  Only  │  • CSV / PDF import             │
+│  • Reactive RxJS state       │ Cookies│  • Email alerts (Thymeleaf)     │
 └─────────────────────────────┘        └──────────────────────────────────┘
 ```
 
@@ -47,8 +47,8 @@ JWT access tokens (15 min) and refresh tokens (7 days) are stored exclusively in
 
 | Layer | Technology |
 |---|---|
-| Language | Java 17 |
-| Framework | Spring Boot 3.5.7 |
+| Language | Java 21 |
+| Framework | Spring Boot 4.0.3 |
 | Security | Spring Security + JWT (JJWT 0.13) |
 | Persistence | Spring Data JPA + Hibernate |
 | Database | MySQL |
